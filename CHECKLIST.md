@@ -480,3 +480,12 @@ Open:
 - [x] Windows runs the downloaded setup; Linux opens the release page
 - [x] Footer "Made by Max with heart and coffee" at the end of About and of the Settings list, both icons in the theme's accent colour
 - [ ] Try on a device: two releases are needed (install the older one, publish a newer one), then check the check, download, permission prompt, system install, Shizuku install, the beta switch, and the footer colours
+
+## Update 2026-11-14 (logout options, grouped Settings, About, new logo; compiles in CI once pushed, not tried on a device)
+- [x] Log out is split into four named actions in Settings > Telegram: **Log out** (account if logged in, then the main bot), **bot only**, **account only**, and **Log out and delete all data** (logs the account out, shuts everything down, deletes the data folder and caches, and starts over from the tour). The old single "Log out" only forgot the main bot's API id, hash and token. Extra bots stay for the first three
+- [ ] Try: delete all data returns to the tour with an empty library and no login on Android and desktop; check nothing is left under the app's data folder, and that a backup made first restores
+- [x] Settings list is grouped under headings (Look and feel, Music, Telegram and devices, About) with About last; every category must name a group, so none can be dropped. The desktop sidebar has the same headings
+- [x] About (renamed from "About and updates") has an Installation method choice (System installer or Shizuku) with Shizuku's state and its Allow / Open Shizuku button directly below, also when Shizuku is not installed (choosing it then says "Install Shizuku first")
+- [x] Profile ends with an About card (icon, version, channel, "Update X available") that opens About, with the Made by line under it
+- [x] The tour's logo is the real launcher icon on every platform (blue square, purple scallop, white plane). Its loop: the plane flies off, a music note pops up, the plane comes back and hits it, the note spins away in sparkles and the icon squashes and springs back. Reduce motion shows it still. The tour background also has slowly rising notes and dots
+- [ ] Try on a device: the timing of the logo loop and the calmness of the background (constants at the top of `AnimatedLogo.kt` and in `GradientBackdrop`)
