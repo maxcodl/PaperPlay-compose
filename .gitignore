@@ -21,3 +21,5 @@ CLAUDE.md
 .claude/
 build-all.bat
 graphify-out/
+# Python bytecode from the release script tests
+__pycache__/
