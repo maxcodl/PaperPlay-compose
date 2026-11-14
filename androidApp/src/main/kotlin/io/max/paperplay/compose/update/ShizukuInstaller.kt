@@ -16,10 +16,22 @@ import kotlin.coroutines.resume
 
 /** Installs through Shizuku: no confirmation screen, but Shizuku must be running and must have allowed PaperPlay. */
 class ShizukuInstaller(private val context: Context) : io.max.paperplay.core.update.ShizukuControl {
-    override val installed: Boolean
-        get() = runCatching { context.packageManager.getPackageInfo(PACKAGE, 0); true }.getOrDefault(false)
+    /** A running Shizuku is installed by definition; the package lookup alone can be hidden from this app by the system. */
+    override val installed: Boolean get() = running || packageVisible()
 
     override val running: Boolean get() = Shizuku.pingBinder()
+
+    private var lastLookup: String? = null
+
+    private fun packageVisible(): Boolean {
+        val failure = runCatching { context.packageManager.getPackageInfo(PACKAGE, 0) }.exceptionOrNull()
+        val result = failure?.javaClass?.simpleName ?: "found"
+        if (result != lastLookup) { // the About page asks every second; say it once per change
+            lastLookup = result
+            android.util.Log.i("PaperPlay", "Shizuku package lookup: $result")
+        }
+        return failure == null
+    }
 
     override val allowed: Boolean get() = running && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
 
