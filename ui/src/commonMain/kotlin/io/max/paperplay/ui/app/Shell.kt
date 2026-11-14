@@ -184,6 +184,17 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
             known = now
         }
     }
+    // Once a day, when allowed, look for a newer release; offer to open About if there is one.
+    LaunchedEffect(Unit) {
+        val updates = backend.services.updates
+        if (!updates.autoCheckDue()) return@LaunchedEffect
+        updates.check()
+        val found = updates.state.value as? io.max.paperplay.core.update.UpdateState.Available ?: return@LaunchedEffect
+        val r = snack.showSnackbar("Update ${found.release.version} available", actionLabel = "View")
+        if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+            navigate { settings = true; settingsDeep = true; settingsStack.clear(); settingsStack.add("about") }
+        }
+    }
     LaunchedEffect(openRequest) {
         when (openRequest) {
             "player" -> showPlayer = true
@@ -275,6 +286,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                             },
                             barsHeight,
                             scan = scan,
+                            updates = backend.services.updates,
                         )
                     }
                     }
@@ -379,6 +391,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                                     },
                                     pad,
                                     scan = scan,
+                                    updates = backend.services.updates,
                                 )
                                 k.page == "tasks" -> TasksScreen(backend.tasks, onBack = ::goBack)
                                 k.page == "upload" -> Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) { TopBar("Upload"); UploadsPage(backend); androidx.compose.foundation.layout.Spacer(Modifier.height(120.dp)) }

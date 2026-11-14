@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
@@ -29,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -97,14 +100,41 @@ internal fun ExpressiveHero(
     }
 }
 
-/** A slowly drifting colour wash behind the whole tour. */
+/** One drifting shape of the tour background: where it starts, how fast it rises (whole loops, so the wrap is seamless) and how it sways. */
+private class Drifter(
+    val x: Float, val start: Float, val loops: Int, val size: Float, val note: Boolean, val tertiary: Boolean,
+    val swayLoops: Int, val swayPhase: Float, val swayAmount: Float, val alpha: Float,
+)
+
+private const val BACKDROP_LOOP_MS = 60_000
+
+/**
+ * The colour wash behind the whole tour: two soft colour blobs that drift, and about 14 music notes and dots that rise slowly and
+ * sway, in the theme's accent colours. Everything comes from one time value that is only read while drawing. With Reduce motion
+ * on, only the still wash is drawn.
+ */
 @Composable
 internal fun GradientBackdrop(modifier: Modifier = Modifier) {
+    val reduced = io.max.paperplay.ui.theme.LocalReduceMotion.current
     val t = rememberInfiniteTransition(label = "wash")
     val drift by t.animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
+    val loop by t.animateFloat(0f, 1f, infiniteRepeatable(tween(BACKDROP_LOOP_MS, easing = LinearEasing)), label = "rise")
     val a = MaterialTheme.colorScheme.primaryContainer
     val b = MaterialTheme.colorScheme.tertiaryContainer
     val base = MaterialTheme.colorScheme.background
+    val primary = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    val notePainter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Rounded.MusicNote)
+    val drifters = remember {
+        val r = kotlin.random.Random(5)
+        List(14) { i ->
+            Drifter(
+                x = r.nextFloat(), start = r.nextFloat(), loops = 1 + r.nextInt(3), size = 0.018f + r.nextFloat() * 0.03f,
+                note = i % 2 == 0, tertiary = r.nextBoolean(), swayLoops = 3 + r.nextInt(4), swayPhase = r.nextFloat(),
+                swayAmount = 0.02f + r.nextFloat() * 0.04f, alpha = 0.12f + r.nextFloat() * 0.12f,
+            )
+        }
+    }
     Box(
         modifier.fillMaxSize().background(base).drawBehind {
             drawRect(
@@ -119,6 +149,21 @@ internal fun GradientBackdrop(modifier: Modifier = Modifier) {
                     center = Offset(size.width * (0.95f - 0.4f * drift), size.height * 0.95f), radius = size.maxDimension * 0.7f,
                 ),
             )
+            if (reduced) return@drawBehind
+            for (d in drifters) {
+                val progress = (d.start + loop * d.loops) % 1f
+                val cx = size.width * (d.x + d.swayAmount * kotlin.math.sin(2f * kotlin.math.PI.toFloat() * (loop * d.swayLoops + d.swayPhase)))
+                val cy = size.height * (1.08f - 1.16f * progress)
+                // Fades in from the bottom and out at the top.
+                val alpha = d.alpha * kotlin.math.sin(progress * kotlin.math.PI.toFloat())
+                val color = (if (d.tertiary) tertiary else primary).copy(alpha = alpha)
+                val w = size.minDimension * d.size * 2f
+                if (d.note) {
+                    translate(cx - w / 2, cy - w / 2) {
+                        with(notePainter) { draw(androidx.compose.ui.geometry.Size(w, w), colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color)) }
+                    }
+                } else drawCircle(color, radius = w / 4, center = Offset(cx, cy))
+            }
         },
     )
 }

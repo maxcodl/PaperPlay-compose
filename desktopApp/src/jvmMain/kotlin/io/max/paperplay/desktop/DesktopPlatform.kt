@@ -31,5 +31,13 @@ class DesktopPlatform(dir: File) : Platform {
     override fun openDriver(path: String): SqlDriver = openLibraryDriver(path)
     override fun createPlayer(): PlayerEngine = createPlayerEngine()
     override val deviceModel: String get() = System.getProperty("os.name") ?: "Desktop"
-    override val appVersion: String get() = "0.2.0"
+    override fun deleteAllData() {
+        File(dataDir).listFiles()?.forEach { it.deleteRecursively() }
+    }
+
+    override val appVersion: String get() = System.getProperty("paperplay.version") ?: "dev"
+    private val windows = System.getProperty("os.name").orEmpty().startsWith("Windows")
+    override val updatePlatform = if (windows) io.max.paperplay.core.update.UpdatePlatform.Windows else io.max.paperplay.core.update.UpdatePlatform.Linux
+    // Linux has no installer to run: the About page opens the release page instead.
+    override val updateInstaller: io.max.paperplay.core.update.UpdateInstaller? = if (windows) DesktopUpdateInstaller() else null
 }

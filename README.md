@@ -109,6 +109,37 @@ foreach ($dir in "audio_output","audio_filter","audio_mixer","packetizer","strea
 The curated `codec`, `demux` and `access` plugin subsets are copied by name (see the git history). If VLC is installed
 but the bundled folder is missing, the app falls back to the system install. CI downloads VLC itself.
 
+## Releases and versions
+
+Every push to `beta` publishes a numbered pre-release (for example `v1.3.0-beta.7`), and a push to `main` publishes the
+stable release (`v1.3.0`). The version and the change log come from the commit subjects, so nothing is bumped by hand:
+
+| Subject starts with | Effect |
+|---|---|
+| `feat:` | minor bump, listed under **Added** |
+| `fix:` or `perf:` | patch bump, listed under **Fixed** or **Improved** |
+| `feat!:`, or `BREAKING CHANGE` in the message | major bump, listed under **Breaking changes** |
+| `docs:` | listed under **Documentation**, does not release on its own |
+| `chore:` `ci:` `build:` `style:` `test:` `refactor:` | hidden, never release on their own |
+| no prefix | patch bump, listed under **Other changes** |
+
+Android and desktop share one version, and the Android `versionCode` is the commit count. Every release has its notes on
+the GitHub Releases page, and each stable release is also added to [`CHANGELOG.md`](CHANGELOG.md). The logic lives in
+`scripts/release/release.py` (run `python3 scripts/release/test_release.py` for its tests).
+
+## Updating
+
+**Settings > About and updates** checks GitHub Releases for a newer version (when the app starts, at most once a day, or
+when you tap *Check for updates*) and shows what changed.
+
+- **Channels:** stable by default; turn on *Beta updates* to also get pre-releases.
+- **Safety:** files are only downloaded from this project's releases, checked against the release's `SHA256SUMS.txt`, and
+  never installed until you tap Install. Android also refuses an update signed with a different key.
+- **Android:** the system installer asks you to confirm. If PaperPlay is not yet allowed to install apps, it opens that
+  settings screen and carries on when you allow it. With **Shizuku** installed, *Install with Shizuku* skips the
+  confirmation screen; Shizuku must be running and must allow PaperPlay.
+- **Windows:** the downloaded setup is started. **Linux:** the release page opens.
+
 ## Configuration
 
 You provide your own Telegram API id, API hash and bot token in the first-run setup or Settings. They are stored on the

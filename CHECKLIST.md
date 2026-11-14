@@ -465,3 +465,28 @@ Open:
 - [x] Each tab keeps its scroll position while you are on another page (`rememberSaveableStateHolder`, phone and desktop; detail, Settings and Tasks pages are not saved)
 - [ ] Try on the phone: leave a long list half way, open an album and come back; skip songs and watch the title and cover; press the nav bar and mini player quickly
 
+## Update 2026-11-14 (automatic releases; compiles in CI once pushed, never run on GitHub before)
+- [x] Version and releases from the commit subjects (`scripts/release/release.py`, 17 tests): `feat:` minor, `fix:`/`perf:` patch, `!` major, no prefix patch; docs/chore/ci/build/style/test/refactor never release alone. Push to `beta` = numbered pre-release, push to `main` = stable. One shared version for Android and desktop, first release 1.3.0; Android `versionCode` is the commit count
+- [x] Change log: grouped notes on every GitHub release (Added, Fixed, Improved, Documentation, Other changes) and a `CHANGELOG.md` section committed to `main` by each stable release
+- [x] The version is passed to Gradle as `-PappVersion` / `-PappVersionCode`; local builds read `version.properties`. The app reads it for the Telegram client string (`PackageInfo.versionName` on Android, `paperplay.version` on desktop)
+- [ ] First run on GitHub: check the `version` job output, the pre-release and its files, that the APK installs over the current app, and that a `docs:` push creates no release. If `main` blocks pushes from the workflow, the CHANGELOG step needs a bypass for the Actions bot
+
+
+## Update 2026-11-14 (in-app updates, About page; compiles in CI, not tried on a device)
+- [x] First run on GitHub worked: run #55 published the pre-release `v1.3.0-beta.1` with grouped notes. A mention of "BREAKING CHANGE" in a commit message body no longer counts as a major bump (only a line starting with `BREAKING CHANGE:` does)
+- [x] Settings > About and updates: version, check for updates, release notes, download with progress, SHA-256 check against `SHA256SUMS.txt`, install, skip this version; *Beta updates* (pre-releases) and *Check automatically* switches. The start-up check runs at most once a day and shows an "Update X available" snackbar that opens About
+- [x] Android installs through the package installer. A missing "install unknown apps" permission shows a toast, opens that settings screen and the update continues once it is allowed; Settings > Permissions has an "Install updates" row
+- [x] Optional Shizuku installer (shown when Shizuku is installed): asks Shizuku for permission, toasts "Start Shizuku first" or "Shizuku permission denied", offers the system installer instead; never switches on its own. Permissions has a Shizuku row while it is selected. The AIDL service is the likeliest thing to need a fix
+- [x] Windows runs the downloaded setup; Linux opens the release page
+- [x] Footer "Made by Max with heart and coffee" at the end of About and of the Settings list, both icons in the theme's accent colour
+- [ ] Try on a device: two releases are needed (install the older one, publish a newer one), then check the check, download, permission prompt, system install, Shizuku install, the beta switch, and the footer colours
+
+## Update 2026-11-14 (logout options, grouped Settings, About, new logo; compiles in CI once pushed, not tried on a device)
+- [x] Log out is split into four named actions in Settings > Telegram: **Log out** (account if logged in, then the main bot), **bot only**, **account only**, and **Log out and delete all data** (logs the account out, shuts everything down, deletes the data folder and caches, and starts over from the tour). The old single "Log out" only forgot the main bot's API id, hash and token. Extra bots stay for the first three
+- [ ] Try: delete all data returns to the tour with an empty library and no login on Android and desktop; check nothing is left under the app's data folder, and that a backup made first restores
+- [x] Settings list is grouped under headings (Look and feel, Music, Telegram and devices, About) with About last; every category must name a group, so none can be dropped. The desktop sidebar has the same headings
+- [x] About (renamed from "About and updates") has an Installation method choice (System installer or Shizuku) with Shizuku's state and its Allow / Open Shizuku button directly below, also when Shizuku is not installed (choosing it then says "Install Shizuku first")
+- [x] Profile ends with an About card (icon, version, channel, "Update X available") that opens About, with the Made by line under it
+- [x] The tour's logo is the real launcher icon on every platform (blue square, purple scallop, white plane). Its loop: the plane flies off, a music note pops up, the plane comes back and hits it, the note spins away in sparkles and the icon squashes and springs back. Reduce motion shows it still. The tour background also has slowly rising notes and dots
+- [ ] Try on a device: the timing of the logo loop and the calmness of the background (constants at the top of `AnimatedLogo.kt` and in `GradientBackdrop`)
+- [x] About page cleanup (14 Nov, compiles in CI, not tried): one header with the icon, version, update status and a single button that follows the state; Update channel and Installation method are drop-down rows (`DropdownRow` in `SettingsUi.kt`); Shizuku's state shows inside the Installation method row, with its Open Shizuku / Allow button; Check automatically stays a switch; the three links are tight rows. Choosing Shizuku when it is not installed says "Install Shizuku first" in that row

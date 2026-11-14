@@ -14,12 +14,14 @@ val signing = rootProject.file("local.properties").takeIf { it.exists() }
 android {
     namespace = "io.max.paperplay.compose"
     compileSdk = 37
+    buildFeatures { aidl = true }
     defaultConfig {
         applicationId = "io.max.paperplay.compose"
         minSdk = 26
         targetSdk = 37
-        versionCode = 3
-        versionName = "0.3.0"
+        // Set by the root build file: -PappVersion / -PappVersionCode in CI, version.properties and the commit count locally.
+        versionCode = rootProject.extra["appVersionCode"] as Int
+        versionName = rootProject.extra["appVersion"] as String
         ndk { abiFilters += "arm64-v8a" }
     }
     signingConfigs {
@@ -75,5 +77,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":player"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 }

@@ -50,8 +50,13 @@ import io.max.paperplay.ui.components.CoverImage
 import com.kyant.backdrop.backdrops.layerBackdrop
 import io.max.paperplay.ui.isPhone
 
+/** The headings of the Settings list. Every [Category] names one, so none can be left out of the list. */
+internal enum class CategoryGroup(val label: String) {
+    Look("Look and feel"), Music("Music"), Telegram("Telegram and devices"), About("About"),
+}
+
 internal class Category(
-    val id: String, val title: String, val subtitle: String, val keywords: String, val icon: ImageVector,
+    val id: String, val title: String, val subtitle: String, val keywords: String, val icon: ImageVector, val group: CategoryGroup,
     val phoneOnly: Boolean = false, private val desktopSubtitle: String? = null,
 ) {
     /** The line shown under the title; some pages have fewer options on the desktop. */
@@ -59,16 +64,17 @@ internal class Category(
 }
 
 internal val categories = listOf(
-    Category("style", "Appearance", "Theme, colors, icons, glass look, sidebar and bar", "style look glass material expressive blur theme dark amoled accent color icons nav bar sidebar floating radius selection", Icons.Rounded.AutoAwesome),
-    Category("glass", "Glass", "Blur and tint for every glass part", "glass blur refraction tint", Icons.Rounded.BlurOn),
-    Category("listening", "Listening", "ListenBrainz, volume levelling, equalizer", "listenbrainz scrobble listens loudness replaygain equalizer eq", Icons.Rounded.GraphicEq),
-    Category("library", "Library", "Repair, sorting, duplicates, rescan, song info", "speed rate rescan duplicates sort general covers info repair fix missing songs metadata organize tidy", Icons.Rounded.LibraryMusic),
-    Category("mixes", "Mixes", "Taste learning and weather mixes", "mix taste learning weather city", Icons.Rounded.AutoAwesome),
-    Category("uploads", "Uploads", "Upload pace and skipping known songs", "upload slow skip speed parallel", Icons.Rounded.Upload),
-    Category("spotify", "Spotify import", "Import playlists from Spotify", "spotify playlist import", Icons.Rounded.PlaylistAdd),
-    Category("devices", "Devices and background", "Connect devices, keep running", "device connection sync background battery", Icons.Rounded.Devices, desktopSubtitle = "Connect other devices"),
-    Category("storage", "Storage and backup", "Cache size, backup and restore", "cache storage backup restore clear", Icons.Rounded.Storage),
-    Category("telegram", "Telegram", "Channels, your account, bot activity, log out", "bot channels account log tdlib logout speed reading copy", Icons.Rounded.Send),
+    Category("style", "Appearance", "Theme, colors, icons, glass look, sidebar and bar", "style look glass material expressive blur theme dark amoled accent color icons nav bar sidebar floating radius selection", Icons.Rounded.AutoAwesome, CategoryGroup.Look),
+    Category("glass", "Glass", "Blur and tint for every glass part", "glass blur refraction tint", Icons.Rounded.BlurOn, CategoryGroup.Look),
+    Category("listening", "Listening", "ListenBrainz, volume levelling, equalizer", "listenbrainz scrobble listens loudness replaygain equalizer eq", Icons.Rounded.GraphicEq, CategoryGroup.Music),
+    Category("mixes", "Mixes", "Taste learning and weather mixes", "mix taste learning weather city", Icons.Rounded.AutoAwesome, CategoryGroup.Music),
+    Category("library", "Library", "Repair, sorting, duplicates, rescan, song info", "speed rate rescan duplicates sort general covers info repair fix missing songs metadata organize tidy", Icons.Rounded.LibraryMusic, CategoryGroup.Music),
+    Category("uploads", "Uploads", "Upload pace and skipping known songs", "upload slow skip speed parallel", Icons.Rounded.Upload, CategoryGroup.Music),
+    Category("spotify", "Spotify import", "Import playlists from Spotify", "spotify playlist import", Icons.Rounded.PlaylistAdd, CategoryGroup.Music),
+    Category("telegram", "Telegram", "Channels, your account, bot activity, log out", "bot channels account log tdlib logout speed reading copy", Icons.Rounded.Send, CategoryGroup.Telegram),
+    Category("devices", "Devices and background", "Connect devices, keep running", "device connection sync background battery", Icons.Rounded.Devices, CategoryGroup.Telegram, desktopSubtitle = "Connect other devices"),
+    Category("storage", "Storage and backup", "Cache size, backup and restore", "cache storage backup restore clear", Icons.Rounded.Storage, CategoryGroup.Telegram),
+    Category("about", "About", "Version, updates and source code", "about update updates version beta release github shizuku changelog installer", Icons.Rounded.Info, CategoryGroup.About),
 )
 
 private val cacheLimits = listOf(1L shl 29, 1L shl 30, 2L shl 30, 5L shl 30, 10L shl 30, 20L shl 30, 50L shl 30)
@@ -155,12 +161,18 @@ private fun SettingsList(prefs: UiPrefs, stack: MutableList<String>) {
                 AppIcon(Icons.Rounded.ChevronRight, null)
             }
         }
-        shown.forEach { c -> SettingsCard(c.icon, c.title, c.text, { stack.add(c.id) }) }
         val tour = io.max.paperplay.ui.LocalAppEnv.current?.showTour
-        if (tour != null && (q.isEmpty() || "welcome tour intro about" .contains(q))) {
-            SettingsCard(Icons.Rounded.MusicNote, "Welcome tour", "Show the introduction again", { tour.value = true })
+        val tourShown = tour != null && (q.isEmpty() || "welcome tour intro".contains(q))
+        for (group in CategoryGroup.entries) {
+            val inGroup = shown.filter { it.group == group }
+            val withTour = tourShown && group == CategoryGroup.About
+            if (inGroup.isEmpty() && !withTour) continue
+            SectionLabel(group.label)
+            if (withTour) SettingsCard(Icons.Rounded.MusicNote, "Welcome tour", "Show the introduction again", { tour!!.value = true })
+            inGroup.forEach { c -> SettingsCard(c.icon, c.title, c.text, { stack.add(c.id) }) }
         }
-        if (shown.isEmpty() && q.isNotEmpty() && !"welcome tour intro about".contains(q)) Text("No settings match", Modifier.padding(24.dp))
+        if (shown.isEmpty() && !tourShown) Text("No settings match", Modifier.padding(24.dp))
+        if (q.isEmpty()) MadeBy()
     }
 }
 
@@ -282,7 +294,11 @@ internal fun SettingsPage(
                 Icons.Rounded.Person,
             ) { stack.add("account") }
             NavRow("Activity log", "Reads, downloads, uploads, rate limits and problems. Search, copy and save", Icons.Rounded.MonitorHeart) { stack.add("log") }
-            SettingsRow("Log out", icon = Icons.Rounded.Logout, subtitle = "Forgets the bot's credentials. Your library stays on this device", onClick = { confirm = "logout" })
+            SectionLabel("Log out")
+            SettingsRow("Log out", icon = Icons.Rounded.Logout, subtitle = "Your account (if logged in) and the main bot. The library stays on this device", onClick = { confirm = "logout" })
+            SettingsRow("Log out the bot only", icon = Icons.Rounded.SmartToy, subtitle = "Forgets the main bot's credentials. Your account stays logged in", onClick = { confirm = "logoutbot" })
+            SettingsRow("Log out the account only", icon = Icons.Rounded.Person, subtitle = "Your own login. The bot stays connected", onClick = { confirm = "accountout" })
+            SettingsRow("Log out and delete all data", icon = Icons.Rounded.DeleteForever, subtitle = "Removes the library and everything else from this device, for a fresh start", onClick = { confirm = "erase" })
         }
         "library" -> {
             NavRow("Repair library", "Read every chat again and fill in what is missing", Icons.Rounded.Build) { stack.add("repair") }
@@ -387,6 +403,7 @@ internal fun SettingsPage(
         }
         "mixlearn" -> MixLearnPage(backend) { confirm = "clearlearned" }
         "weather" -> WeatherPage(backend)
+        "about" -> AboutPage(backend)
         "permissions" -> PermissionsPage()
         "conn" -> ConnectionPage(conn, backend)
         "netplay" -> NetplayPage(backend)
@@ -413,9 +430,15 @@ internal fun SettingsPage(
         "rescan" -> ConfirmDialog("Run a full rescan?", "Re-reads every message in your music chats at the speed set under Reading channels (Library settings or Telegram). A slower speed takes longer but avoids Telegram's rate limit.", "Rescan", backend::rescan) { confirm = null }
         "restore" -> ConfirmDialog("Restore a backup?", "This replaces your library, playlists and favorites with the backup.", "Restore", onRestore) { confirm = null }
         "clearcache" -> ConfirmDialog("Clear the cache?", "Streamed songs stored on this device are deleted. Stop playback first. They download again when played.", "Clear", { backend.clearCache { notice.value = it } }) { confirm = null }
-        "accountout" -> ConfirmDialog("Log out of your account?", "Your index stays on this device. Chats and channels need a new login.", "Log out", { backend.services.scope.launch { runCatching { backend.services.indexCloud.save() }; backend.account.logOut() } }) { confirm = null }
+        "accountout" -> ConfirmDialog("Log out of your account?", "Your index stays on this device. Chats and channels need a new login. The bot is not affected.", "Log out", backend::logOutAccount) { confirm = null }
         "clearlearned" -> ConfirmDialog("Clear what mixes have learned?", "Forgets play and skip counts and your \"doesn't fit this mix\" choices. Songs and playlists stay.", "Clear", backend::clearLearned) { confirm = null }
-        "logout" -> ConfirmDialog("Log out?", "The bot's API id, hash and token are forgotten and the setup screen shows again. Songs, playlists and settings stay.", "Log out", backend::logOut) { confirm = null }
+        "logout" -> ConfirmDialog("Log out?", "Your account is logged out (if there is one) and the main bot's API id, hash and token are forgotten, so the setup screen shows again. Songs, playlists, settings and extra bots stay.", "Log out", backend::logOutAll) { confirm = null }
+        "logoutbot" -> ConfirmDialog("Log out the bot?", "The main bot's API id, hash and token are forgotten and the setup screen shows again. Your account, songs, playlists, settings and extra bots stay.", "Log out", backend::logOutBot) { confirm = null }
+        "erase" -> ConfirmDialog(
+            "Delete all data?",
+            "This logs out your account and the bot, then deletes the library, playlists, favorites, settings, covers, cached songs, extra bots and every login from this device, and starts the app from the beginning. It cannot be undone. Your Telegram chats and the songs in them are not touched. To keep a copy first, save a backup under Storage and backup.",
+            "Delete everything", { env?.eraseEverything?.value = true },
+        ) { confirm = null }
     }
 }
 

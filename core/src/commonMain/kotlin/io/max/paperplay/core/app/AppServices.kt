@@ -48,6 +48,15 @@ class AppServices(
     val library = LibraryRepository(LibraryRepo(db, clock), clock)
     val scanner = Scanner(library, scope)
 
+    /** Looks for newer releases on GitHub; the person's update choices are kept as settings of this device. */
+    val updates = io.max.paperplay.core.update.UpdateService(
+        defaultHttpFetcher(), platform.updateInstaller,
+        io.max.paperplay.core.update.UpdatePrefs({ platform.settings.get(it) }, { k, v -> platform.settings.put(k, v) }),
+        platform.updatePlatform,
+        io.max.paperplay.core.update.Version.parse(platform.appVersion) ?: io.max.paperplay.core.update.Version(0, 0, 0, io.max.paperplay.core.update.Stage.Dev),
+        clock,
+    )
+
     /** Local network sync and connect. Null (off) until [enableLanSync] is called; it does not listen until `start()`. */
     var lanSync: io.max.paperplay.core.sync.LanSync? = null
         private set
@@ -567,12 +576,35 @@ class AppServices(
         }
     }
 
-    /** Disconnects and forgets the bot's credentials, so setup shows again. The library and prefs stay. */
-    suspend fun logOut() {
+    /** Disconnects and forgets the main bot's credentials, so setup shows again. The account, extra bots, library and prefs stay. */
+    suspend fun logOutBot() {
         disconnect()
         platform.settings.put(Keys.API_ID, "")
         platform.settings.put(Keys.API_HASH, "")
         platform.secrets.remove(Keys.BOT_TOKEN)
+    }
+
+    /** Logs the account out, saving its chat index to the cloud first. Nothing happens when no account is logged in. */
+    suspend fun logOutAccount() {
+        if (!account.loggedIn.value) return
+        runCatching { indexCloud.save() }
+        account.logOut()
+    }
+
+    /** Logs the account out if there is one, then forgets the main bot. */
+    suspend fun logOutAll() {
+        logOutAccount()
+        logOutBot()
+    }
+
+    /**
+     * A clean start: logs the account out (so Telegram ends that session), shuts everything down and deletes all data
+     * this device holds. The services are dead afterwards; the caller builds new ones.
+     */
+    suspend fun eraseEverything() {
+        if (account.loggedIn.value) account.logOut()
+        shutdown()
+        platform.deleteAllData()
     }
 
     /** Disconnects; the session stays on disk, so [connect] logs in again without a code. */

@@ -364,7 +364,11 @@ fun DesktopSettings(
                         Text(prefs.profileName, Modifier.padding(start = 12.dp), style = MaterialTheme.typography.titleSmall)
                     }
                 }
-                items(categories.filter { !it.phoneOnly }, key = { it.id }) { c ->
+                categories.filter { !it.phoneOnly }.groupBy { it.group }.forEach { (group, list) ->
+                item(key = "group-${group.name}") {
+                    Text(group.label, Modifier.padding(start = 20.dp, top = 12.dp, bottom = 2.dp), style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
+                }
+                items(list, key = { it.id }) { c ->
                     val on = root == c.id
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp).clip(RoundedCornerShape(10.dp))
@@ -378,6 +382,7 @@ fun DesktopSettings(
                             Text(c.text, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
                         }
                     }
+                }
                 }
             }
         }

@@ -8,6 +8,7 @@ $env:JAVA_HOME = 'D:\jdk17'
 $adb = 'D:\scrcpy\adb.exe'
 $iscc = Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'
 $downloads = Join-Path $env:USERPROFILE 'Downloads'
+$appVersion = ((Get-Content (Join-Path $root 'version.properties') | Where-Object { $_ -match '^version=' }) -split '=', 2)[1].Trim()
 
 # Only one Gradle at a time.
 if (Test-Path 'D:\PaperPlayCompose.lock') { throw 'Build lock D:\PaperPlayCompose.lock exists; another build is running.' }
@@ -27,7 +28,6 @@ if (-not $SkipAndroid) {
     Write-Host 'Android release...'
     Gradle ':androidApp:assembleRelease'
     $apk = 'androidApp\build\outputs\apk\release\androidApp-release.apk'
-    $appVersion = (Select-String -Path 'desktopApp\installer\PaperPlay.iss' -Pattern '#define AppVersion "(.+)"').Matches[0].Groups[1].Value
     Copy-Item $apk (Join-Path $downloads "PaperPlay-$appVersion.apk") -Force
     $devices = @(& $adb devices | Select-String "`tdevice$" | ForEach-Object { ($_ -split "`t")[0] })
     if ($devices.Count -eq 1) {
@@ -40,8 +40,7 @@ if (-not $SkipAndroid) {
 if (-not $SkipDesktop) {
     Write-Host 'Desktop release...'
     Gradle ':desktopApp:createReleaseDistributable'
-    $version = (Select-String -Path 'desktopApp\installer\PaperPlay.iss' -Pattern '#define AppVersion "(.+)"').Matches[0].Groups[1].Value
-    & $iscc 'desktopApp\installer\PaperPlay.iss' | Out-Null
+    & $iscc "/DAppVersion=$appVersion" 'desktopApp\installer\PaperPlay.iss' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
     $setup = Get-ChildItem 'desktopApp\build\installer' -Filter '*-setup.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     Copy-Item $setup.FullName $downloads -Force

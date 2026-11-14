@@ -61,6 +61,8 @@ class AppEnv(
     val setOnboarded: () -> Unit = {},
     /** Set true (from Settings) to show the tour again. */
     val showTour: kotlinx.coroutines.flow.MutableStateFlow<Boolean> = kotlinx.coroutines.flow.MutableStateFlow(false),
+    /** Set true (from Settings) to log out and delete all data; the app shuts down, erases, and starts over from the tour. */
+    val eraseEverything: kotlinx.coroutines.flow.MutableStateFlow<Boolean> = kotlinx.coroutines.flow.MutableStateFlow(false),
     /** Asks for the notification permission; null where not needed. */
     val requestNotifications: (() -> Unit)? = null,
     /** Permission checker (Settings > Permissions); null where the platform needs none. */
@@ -78,6 +80,8 @@ fun App(env: AppEnv) {
     // The first launch of a fresh install runs the tour inside Main, where the bot can be set up for real.
     var firstRun by remember { mutableStateOf(!env.onboarded() && !env.libraryExists()) }
     var restoring by remember { mutableStateOf(!env.libraryExists() && !firstRun) }
+    // Bumped after everything was erased, so Main starts from nothing.
+    var generation by remember { mutableStateOf(0) }
     androidx.compose.runtime.CompositionLocalProvider(LocalAppEnv provides env) { PaperPlayTheme {
         if (restoring) {
             io.max.paperplay.ui.app.WindowTint(MaterialTheme.colorScheme.background)
@@ -86,13 +90,15 @@ fun App(env: AppEnv) {
                 skipLabel = "Set up without a backup",
             )
         } else {
-            Main(env, firstRun, onTourDone = { firstRun = false }, onRestore = { restoring = true })
+            androidx.compose.runtime.key(generation) {
+                Main(env, firstRun, onTourDone = { firstRun = false }, onRestore = { restoring = true }, onErased = { firstRun = true; generation++ })
+            }
         }
     } }
 }
 
 @Composable
-private fun Main(env: AppEnv, firstRun: Boolean, onTourDone: () -> Unit, onRestore: () -> Unit) {
+private fun Main(env: AppEnv, firstRun: Boolean, onTourDone: () -> Unit, onRestore: () -> Unit, onErased: () -> Unit) {
     var closing by remember { mutableStateOf(false) }
     val closeScope = rememberCoroutineScope()
     // The database, services and backend are built off the UI thread; a blank themed screen shows meanwhile.
@@ -110,6 +116,17 @@ private fun Main(env: AppEnv, firstRun: Boolean, onTourDone: () -> Unit, onResto
         return
     }
     LaunchedEffect(Unit) { env.mark("first composition of main shell") }
+    val erase by env.eraseEverything.collectAsState()
+    LaunchedEffect(erase) {
+        if (!erase) return@LaunchedEffect
+        // Like a restore: the services stop first, on a scope that outlives this screen.
+        closing = true
+        closeScope.launch {
+            backend.services.eraseEverything()
+            env.eraseEverything.value = false
+            onErased()
+        }
+    }
     val tour by env.showTour.collectAsState()
     val hasCredentials by backend.hasCredentials.collectAsState()
     LaunchedEffect(hasCredentials) {

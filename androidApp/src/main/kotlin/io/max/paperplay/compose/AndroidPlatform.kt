@@ -33,7 +33,20 @@ class AndroidPlatform(private val context: Context) : Platform {
     override fun openDriver(path: String): SqlDriver = libraryDriver(context, path)
     override fun createPlayer(): PlayerEngine = createPlayerEngine()
     override val deviceModel: String get() = Build.MODEL
-    override val appVersion: String get() = "0.2.0"
+    override val updatePlatform = io.max.paperplay.core.update.UpdatePlatform.Android
+    override val updateInstaller: io.max.paperplay.core.update.UpdateInstaller = io.max.paperplay.compose.update.AndroidUpdateInstaller(
+        context,
+        wantsShizuku = { settings.get("update_installer") == "shizuku" },
+        chooseSystem = { settings.put("update_installer", "system") },
+    )
+    override val appVersion: String = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "dev"
+
+    override fun deleteAllData() {
+        // The data folder holds the library, TDLib, covers, cached songs, secrets and settings; the cache folder holds copies made for uploads and updates.
+        context.filesDir.listFiles()?.forEach { it.deleteRecursively() }
+        context.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+        context.getSharedPreferences("permission_checker", Context.MODE_PRIVATE).edit().clear().apply()
+    }
 
     override fun canRunBackground(): Boolean = runCatching {
         val battery = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))

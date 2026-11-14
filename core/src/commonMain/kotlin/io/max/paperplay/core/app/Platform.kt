@@ -33,7 +33,15 @@ interface Platform {
     fun openDriver(path: String): SqlDriver
     fun createPlayer(): PlayerEngine
     val deviceModel: String get() = "Android"
-    val appVersion: String get() = "0.2.0"
+    /** The version the app was built as (1.3.0 or 1.3.0-beta.7); "dev" when a platform does not say. */
+    val appVersion: String get() = "dev"
+    /** Which release file this platform installs. */
+    val updatePlatform: io.max.paperplay.core.update.UpdatePlatform get() = io.max.paperplay.core.update.UpdatePlatform.Linux
+    /** Downloads and installs an update; null where the app can only point to the release page. */
+    val updateInstaller: io.max.paperplay.core.update.UpdateInstaller? get() = null
+
+    /** Deletes everything the app stored on this device (data folder, secrets, settings and caches). Called after the services have shut down. */
+    fun deleteAllData()
 
     /** False when heavy background work should wait: app hidden and on battery, or on a metered network. */
     fun canRunBackground(): Boolean = true
