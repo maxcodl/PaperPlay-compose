@@ -48,6 +48,15 @@ class AppServices(
     val library = LibraryRepository(LibraryRepo(db, clock), clock)
     val scanner = Scanner(library, scope)
 
+    /** Looks for newer releases on GitHub; the person's update choices are kept as settings of this device. */
+    val updates = io.max.paperplay.core.update.UpdateService(
+        defaultHttpFetcher(), platform.updateInstaller,
+        io.max.paperplay.core.update.UpdatePrefs({ platform.settings.get(it) }, { k, v -> platform.settings.put(k, v) }),
+        platform.updatePlatform,
+        io.max.paperplay.core.update.Version.parse(platform.appVersion) ?: io.max.paperplay.core.update.Version(0, 0, 0, io.max.paperplay.core.update.Stage.Dev),
+        clock,
+    )
+
     /** Local network sync and connect. Null (off) until [enableLanSync] is called; it does not listen until `start()`. */
     var lanSync: io.max.paperplay.core.sync.LanSync? = null
         private set

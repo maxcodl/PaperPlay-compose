@@ -68,6 +68,7 @@ internal val categories = listOf(
     Category("spotify", "Spotify import", "Import playlists from Spotify", "spotify playlist import", Icons.Rounded.PlaylistAdd),
     Category("devices", "Devices and background", "Connect devices, keep running", "device connection sync background battery", Icons.Rounded.Devices, desktopSubtitle = "Connect other devices"),
     Category("storage", "Storage and backup", "Cache size, backup and restore", "cache storage backup restore clear", Icons.Rounded.Storage),
+    Category("about", "About and updates", "Version, check for updates, source code", "about update updates version beta release github shizuku changelog", Icons.Rounded.Info),
     Category("telegram", "Telegram", "Channels, your account, bot activity, log out", "bot channels account log tdlib logout speed reading copy", Icons.Rounded.Send),
 )
 
@@ -161,6 +162,7 @@ private fun SettingsList(prefs: UiPrefs, stack: MutableList<String>) {
             SettingsCard(Icons.Rounded.MusicNote, "Welcome tour", "Show the introduction again", { tour.value = true })
         }
         if (shown.isEmpty() && q.isNotEmpty() && !"welcome tour intro about".contains(q)) Text("No settings match", Modifier.padding(24.dp))
+        if (q.isEmpty()) MadeBy()
     }
 }
 
@@ -387,6 +389,7 @@ internal fun SettingsPage(
         }
         "mixlearn" -> MixLearnPage(backend) { confirm = "clearlearned" }
         "weather" -> WeatherPage(backend)
+        "about" -> AboutPage(backend)
         "permissions" -> PermissionsPage()
         "conn" -> ConnectionPage(conn, backend)
         "netplay" -> NetplayPage(backend)

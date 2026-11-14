@@ -21,7 +21,7 @@ sealed interface UpdateState {
 class Downloaded(val path: String, val sha256: String)
 
 /** Why an install did not start, in words for the person; null from [UpdateInstaller.install] means it started. */
-class InstallBlocked(val message: String)
+class InstallBlocked(val message: String, val actionLabel: String? = null, val action: (() -> Unit)? = null)
 
 /** The part that differs by platform: fetching the file and handing it to the system. */
 interface UpdateInstaller {
