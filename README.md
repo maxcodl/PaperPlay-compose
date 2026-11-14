@@ -50,13 +50,17 @@ Built with Kotlin and Compose Multiplatform.
 
 ## Get the apps
 
-Every push to `main` or `beta` is built by GitHub Actions. Open the latest run under the **Actions** tab and download:
+Download from the **Releases** page: stable releases (`v1.3.0`) and numbered pre-releases (`v1.3.1-beta.1`). Each has:
 
-| Artifact | What it is |
+| File | What it is |
 |---|---|
-| `PaperPlay-Android-debug` / `PaperPlay-Android-release` | Android APKs, signed with the key stored in the repository secrets |
-| `PaperPlay-Windows` | zip, MSI installer and setup exe |
-| `PaperPlay-Linux` | `.tar.gz` of the app |
+| `PaperPlay-<version>-android-release.apk` | Android app, signed with the key stored in the repository secrets |
+| `PaperPlay-<version>-windows-x64.zip`, `.msi`, `-setup.exe` | Windows app: zip, MSI installer and setup exe |
+| `PaperPlay-<version>-linux-x64.tar.gz` | Linux app |
+| `SHA256SUMS.txt` | checksums of the files above (the in-app updater checks them) |
+
+Every push to `main` or `beta` is also built by GitHub Actions; the debug Android APK is only a workflow artifact
+(`PaperPlay-Android-debug`).
 
 The Windows and Linux builds only include TDLib (the Telegram library) when the repository has a release tagged `deps`
 with a `tdlib-windows.zip`; without it they build but cannot reach Telegram.
@@ -127,18 +131,29 @@ Android and desktop share one version, and the Android `versionCode` is the comm
 the GitHub Releases page, and each stable release is also added to [`CHANGELOG.md`](CHANGELOG.md). The logic lives in
 `scripts/release/release.py` (run `python3 scripts/release/test_release.py` for its tests).
 
+Beta numbers follow the last stable release that `beta` contains. After `beta` is merged into `main` (which publishes the
+stable release), merge `main` back into `beta`; until then the next beta would count again from the old version and sort
+below the stable one, so the updater would not offer it.
+
 ## Updating
 
-**Settings > About and updates** checks GitHub Releases for a newer version (when the app starts, at most once a day, or
+**Settings > About** checks GitHub Releases for a newer version (when the app starts, at most once a day, or
 when you tap *Check for updates*) and shows what changed.
 
-- **Channels:** stable by default; turn on *Beta updates* to also get pre-releases.
+- **Channels:** stable by default; set *Update channel* to *Beta pre-releases* to also get pre-releases.
 - **Safety:** files are only downloaded from this project's releases, checked against the release's `SHA256SUMS.txt`, and
   never installed until you tap Install. Android also refuses an update signed with a different key.
-- **Android:** the system installer asks you to confirm. If PaperPlay is not yet allowed to install apps, it opens that
-  settings screen and carries on when you allow it. With **Shizuku** installed, *Install with Shizuku* skips the
-  confirmation screen; Shizuku must be running and must allow PaperPlay.
+- **Android:** *Installation method* is *System installer* (Android asks you to confirm) or *Shizuku* (no confirmation
+  screen; Shizuku must be running and must allow PaperPlay, and the row shows its state with a button to fix it). If
+  PaperPlay is not yet allowed to install apps, it opens that settings screen and carries on when you allow it.
 - **Windows:** the downloaded setup is started. **Linux:** the release page opens.
+
+## Logging out
+
+**Settings > Telegram** has four separate actions: *Log out* (your account if logged in, then the main bot), *Log out the
+bot only*, *Log out the account only*, and *Log out and delete all data*, which removes the library, settings, covers,
+cached songs, extra bots and every login from the device and starts over from the tour. Your Telegram chats are never
+touched. Save a backup first (Settings > Storage and backup) if you may want the library back.
 
 ## Configuration
 
@@ -163,7 +178,8 @@ that need the database or Telegram have no preview yet.
 - **Other bots' posts:** a bot cannot see songs another bot posted as itself in a group (channels are fine). Repair can read
   with every extra bot and with your own account to find them.
 - **Not tried on a device yet:** system volume on Windows, the tray, borderless full screen, the themed Spotify login page,
-  the device popups, reading with extra bots, and the new animations.
+  the device popups, reading with extra bots, the new animations, installing an update through Shizuku, and Log out and
+  delete all data.
 - **Memory:** the desktop app uses about 300 to 400 MB at rest, mostly the graphics driver and class data. Each extra bot is
   its own Telegram session started at launch.
 - **Not built yet:** playback handoff between devices, automatic filing, backup to a Telegram topic, a live equalizer level
