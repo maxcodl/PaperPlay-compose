@@ -2,6 +2,13 @@
 
 All notable changes to PaperPlay are listed here, newest first. Each stable release adds its section automatically.
 
+## [1.3.1] - 2026-11-14
+
+### Fixed
+- The in-app logo uses the launcher icon's own plane image instead of a redrawn badge ([`2a81d2c`](https://github.com/maxcodl/PaperPlay-compose/commit/2a81d2c27e2d9ce24579a0c5a4e05413a16fd68f))
+
+**Full changes:** [v1.3.0...v1.3.1](https://github.com/maxcodl/PaperPlay-compose/compare/v1.3.0...v1.3.1)
+
 ## [1.3.0] - 2026-11-14
 
 ### Added
