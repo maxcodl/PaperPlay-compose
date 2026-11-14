@@ -184,16 +184,32 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
             known = now
         }
     }
-    // Once a day, when allowed, look for a newer release; offer to open About if there is one.
+    // On every launch, when allowed, look for a newer release; a dialog offers to open About if there is one.
+    var updatePrompt by remember { mutableStateOf<io.max.paperplay.core.update.ReleaseInfo?>(null) }
     LaunchedEffect(Unit) {
         val updates = backend.services.updates
-        if (!updates.autoCheckDue()) return@LaunchedEffect
+        if (!updates.prefs.auto) return@LaunchedEffect
         updates.check()
-        val found = updates.state.value as? io.max.paperplay.core.update.UpdateState.Available ?: return@LaunchedEffect
-        val r = snack.showSnackbar("Update ${found.release.version} available", actionLabel = "View")
-        if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-            navigate { settings = true; settingsDeep = true; settingsStack.clear(); settingsStack.add("about") }
-        }
+        updatePrompt = (updates.state.value as? io.max.paperplay.core.update.UpdateState.Available)?.release
+    }
+    updatePrompt?.let { r ->
+        AlertDialog(
+            onDismissRequest = { updatePrompt = null },
+            title = { Text("Update available") },
+            text = { Text("PaperPlay ${r.version} is ready to download.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton({
+                    updatePrompt = null
+                    navigate { settings = true; settingsDeep = true; settingsStack.clear(); settingsStack.add("about") }
+                }) { Text("View") }
+            },
+            dismissButton = {
+                Row {
+                    androidx.compose.material3.TextButton({ backend.services.updates.skip(); updatePrompt = null }) { Text("Skip this version") }
+                    androidx.compose.material3.TextButton({ updatePrompt = null }) { Text("Later") }
+                }
+            },
+        )
     }
     LaunchedEffect(openRequest) {
         when (openRequest) {
