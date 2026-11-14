@@ -499,3 +499,12 @@ Open:
 - [ ] Not seen yet: an actual update installed through Shizuku and through the system installer; the Install-unknown-apps prompt on a phone where it is off; the logo loop (plane flies off, note, hit) and the tour background in motion; Log out and delete all data; the three narrower logout options
 - [ ] The `deps` release with `tdlib-windows.zip` still does not exist, so Windows and Linux builds cannot reach Telegram
 - [ ] Open: `INSTALL_FAILED_NO_MATCHING_ABIS` when installing the signed debug APK from CI on the phone, and the memory-leak candidates from the 14 Nov investigation (nothing changed for them yet)
+
+## Update 2026-11-14 (Android settings crash, themed logo, one Windows installer)
+- [x] Settings crashed on the phone with `MissingResourceException: composeResources/.../app_plane.png`: the `ui` KMP Android library did not package Compose resources. Fixed with `androidResources.enable = true` in `ui/build.gradle.kts`; the rebuilt debug APK contains the PNG and installed (not opened since)
+- [x] The in-app logo (tour, Profile About card, About header) uses the theme: `primary` badge, `onPrimary` plane, note, sparkles and trail. The plane PNG is tinted flat, so check its edges on the phone. The launcher and notification icons stay blue
+- [x] Windows ended up with two installs: the script's Inno installer (per-user, `AppData\Local\Programs\PaperPlay`) and the GitHub jpackage setup exe or MSI (per-machine, Program Files, 141 MB against 82 MB because CI used the unminified `createDistributable`)
+- [x] CI now runs `createReleaseDistributable` and builds the Inno installer from `PaperPlay.iss` (same `AppId` as the script), so the update page upgrades the same install; the MSI is no longer published. Not run yet: the first release from CI is the test (Inno Setup is installed with choco if the runner lacks it)
+- [x] The Inno setup warns when an older install exists in Program Files; the 1.3.1 release on GitHub still has the old jpackage installer
+- [x] The MSI copy in Program Files was uninstalled on the PC (exit 3010, restart or closing the running app finishes it)
+- [ ] Open: the GitHub setup exe should be near 82 MB but the goal is under 80 MB. Biggest parts of the 162 MB image: `tdjson.dll` 28 MB, JVM runtime 49 MB, `skiko` 14 MB, `icudtl.dat` 10 MB. Try `Compression=lzma2/ultra64` first, then measure the CI build before cutting anything
