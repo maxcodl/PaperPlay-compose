@@ -46,9 +46,7 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 
-// The launcher icon: a flat blue square with the white paper plane. The plane is the launcher's own image (res/drawable-xxxhdpi/ic_launcher_foreground.png).
-private val LogoBlue = Color(0xFF1E64DC)
-private val LogoInk = Color.White
+// The launcher icon, themed: a flat primary-colour square with the onPrimary paper plane. The plane is the launcher's own image (res/drawable-xxxhdpi/ic_launcher_foreground.png).
 
 // One loop of the story. The beats are fractions of the loop (LOOP_MS long); the order is bob, fly out, note appears,
 // plane returns and hits the note, note flies off, plane settles.
@@ -127,6 +125,8 @@ private fun flight(cycle: Float): Flight = when {
 internal fun LogoCanvas(cycle: Float, modifier: Modifier = Modifier, size: Dp = 96.dp) {
     val note = rememberVectorPainter(Icons.Rounded.MusicNote)
     val plane = imageResource(Res.drawable.app_plane)
+    val badge = androidx.compose.material3.MaterialTheme.colorScheme.primary
+    val ink = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
     Canvas(modifier.size(size)) {
         val s = this.size.minDimension
         val c = Offset(s / 2, s / 2)
@@ -135,24 +135,24 @@ internal fun LogoCanvas(cycle: Float, modifier: Modifier = Modifier, size: Dp = 
         val squashT = ((cycle - HIT) / SQUASH_LENGTH).coerceIn(0f, 1f)
         val squash = if (cycle < HIT) 0f else sin(squashT * PI).toFloat() * (1f - squashT)
         scale(1f - 0.05f * squash, 1f + 0.04f * squash, c) {
-            drawRoundRect(LogoBlue, size = Size(s, s), cornerRadius = CornerRadius(s * 0.34f))
+            drawRoundRect(badge, size = Size(s, s), cornerRadius = CornerRadius(s * 0.34f))
 
             clipPath(Path().apply { addRoundRect(RoundRect(0f, 0f, s, s, CornerRadius(s * 0.34f))) }) {
-                drawNote(note, cycle, s)
+                drawNote(note, cycle, s, ink)
                 val f = flight(cycle)
                 translate(left = f.dx * s, top = f.lift * s) {
                     rotate(f.tilt, c) {
                         if (f.trail > 0.02f) for (i in 0..2) {
                             val y = s * (0.43f + 0.07f * i)
                             drawLine(
-                                LogoInk.copy(alpha = 0.55f * f.trail), Offset(s * (0.06f + 0.05f * i), y), Offset(s * (0.24f + 0.03f * i), y),
+                                ink.copy(alpha = 0.55f * f.trail), Offset(s * (0.06f + 0.05f * i), y), Offset(s * (0.24f + 0.03f * i), y),
                                 strokeWidth = s * 0.028f, cap = StrokeCap.Round,
                             )
                         }
                         // The launcher's adaptive icon shows the middle two thirds of its canvas, with the plane inset 16%: that is 1.02 times the icon.
                         val side = (s * 1.02f).toInt()
                         val edge = ((s - side) / 2f).toInt()
-                        drawImage(plane, dstOffset = IntOffset(edge, edge), dstSize = IntSize(side, side), filterQuality = FilterQuality.High)
+                        drawImage(plane, dstOffset = IntOffset(edge, edge), dstSize = IntSize(side, side), filterQuality = FilterQuality.High, colorFilter = ColorFilter.tint(ink))
                     }
                 }
             }
@@ -161,7 +161,7 @@ internal fun LogoCanvas(cycle: Float, modifier: Modifier = Modifier, size: Dp = 
 }
 
 /** The music note and the sparkles of the hit: nothing before the note appears, a burst and a spin-away after the hit. */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNote(note: androidx.compose.ui.graphics.painter.Painter, cycle: Float, s: Float) {
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNote(note: androidx.compose.ui.graphics.painter.Painter, cycle: Float, s: Float, ink: Color) {
     if (cycle < NOTE_IN) return
     val w = s * NOTE_SIZE * 2
     val baseX = s * NOTE_X
@@ -172,30 +172,30 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNote(note: andr
         val grow = easeOutBack(q)
         val wobble = sin(q * 3 * PI).toFloat() * 10f * (1f - q)
         val float = sin((cycle - NOTE_IN) * 2 * PI * 4).toFloat() * s * 0.008f
-        placeNote(note, baseX, baseY + float, w, grow, wobble, 1f)
+        placeNote(note, baseX, baseY + float, w, grow, wobble, 1f, ink)
         return
     }
     val u = ((cycle - HIT) / KNOCK_LENGTH).coerceIn(0f, 1f)
     if (u < 1f) {
         // Knocked up and to the right, spinning and shrinking.
-        placeNote(note, baseX + s * 0.30f * u, baseY - s * 0.42f * u + s * 0.25f * u * u, w, 1f - u, 540f * u, 1f - u)
+        placeNote(note, baseX + s * 0.30f * u, baseY - s * 0.42f * u + s * 0.25f * u * u, w, 1f - u, 540f * u, 1f - u, ink)
         // Five sparkles fly outwards from the point of impact and fade.
         for (i in 0 until 5) {
             val a = (i * 72f - 90f) * PI.toFloat() / 180f
             val r = s * 0.22f * u
-            drawCircle(LogoInk.copy(alpha = 1f - u), radius = s * 0.018f * (1f - 0.5f * u), center = Offset(baseX - s * 0.04f + r * cos(a), baseY + r * sin(a)))
+            drawCircle(ink.copy(alpha = 1f - u), radius = s * 0.018f * (1f - 0.5f * u), center = Offset(baseX - s * 0.04f + r * cos(a), baseY + r * sin(a)))
         }
     }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.placeNote(
-    note: androidx.compose.ui.graphics.painter.Painter, x: Float, y: Float, w: Float, scaleBy: Float, rotateBy: Float, alpha: Float,
+    note: androidx.compose.ui.graphics.painter.Painter, x: Float, y: Float, w: Float, scaleBy: Float, rotateBy: Float, alpha: Float, ink: Color,
 ) {
     val pivot = Offset(w / 2, w / 2)
     translate(left = x - w / 2, top = y - w / 2) {
         rotate(rotateBy, pivot) {
             scale(scaleBy, pivot) {
-                with(note) { draw(Size(w, w), alpha = alpha.coerceIn(0f, 1f), colorFilter = ColorFilter.tint(LogoInk)) }
+                with(note) { draw(Size(w, w), alpha = alpha.coerceIn(0f, 1f), colorFilter = ColorFilter.tint(ink)) }
             }
         }
     }
