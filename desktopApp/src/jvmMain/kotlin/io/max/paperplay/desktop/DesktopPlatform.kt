@@ -31,6 +31,10 @@ class DesktopPlatform(dir: File) : Platform {
     override fun openDriver(path: String): SqlDriver = openLibraryDriver(path)
     override fun createPlayer(): PlayerEngine = createPlayerEngine()
     override val deviceModel: String get() = System.getProperty("os.name") ?: "Desktop"
+    override fun deleteAllData() {
+        File(dataDir).listFiles()?.forEach { it.deleteRecursively() }
+    }
+
     override val appVersion: String get() = System.getProperty("paperplay.version") ?: "dev"
     private val windows = System.getProperty("os.name").orEmpty().startsWith("Windows")
     override val updatePlatform = if (windows) io.max.paperplay.core.update.UpdatePlatform.Windows else io.max.paperplay.core.update.UpdatePlatform.Linux

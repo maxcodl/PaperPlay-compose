@@ -41,6 +41,13 @@ class AndroidPlatform(private val context: Context) : Platform {
     )
     override val appVersion: String = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "dev"
 
+    override fun deleteAllData() {
+        // The data folder holds the library, TDLib, covers, cached songs, secrets and settings; the cache folder holds copies made for uploads and updates.
+        context.filesDir.listFiles()?.forEach { it.deleteRecursively() }
+        context.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+        context.getSharedPreferences("permission_checker", Context.MODE_PRIVATE).edit().clear().apply()
+    }
+
     override fun canRunBackground(): Boolean = runCatching {
         val battery = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
         val charging = (battery?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0

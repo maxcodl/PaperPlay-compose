@@ -977,11 +977,19 @@ class CoreBackend(val services: AppServices) : PlayerControls {
         return null
     }
 
-    /** True while the bot's credentials are stored; false after [logOut], which shows setup again. */
+    /** True while the bot's credentials are stored; false after [logOutBot], which shows setup again. */
     val hasCredentials = kotlinx.coroutines.flow.MutableStateFlow(services.hasCredentials)
 
-    fun logOut() {
-        scope.launch { services.logOut(); hasCredentials.value = false }
+    fun logOutBot() {
+        scope.launch { services.logOutBot(); hasCredentials.value = false }
+    }
+
+    fun logOutAccount() {
+        scope.launch { services.logOutAccount() }
+    }
+
+    fun logOutAll() {
+        scope.launch { services.logOutAll(); hasCredentials.value = false }
     }
 
     fun connect() = services.connect()

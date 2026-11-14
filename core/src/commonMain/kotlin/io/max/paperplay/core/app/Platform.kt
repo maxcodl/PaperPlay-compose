@@ -40,6 +40,9 @@ interface Platform {
     /** Downloads and installs an update; null where the app can only point to the release page. */
     val updateInstaller: io.max.paperplay.core.update.UpdateInstaller? get() = null
 
+    /** Deletes everything the app stored on this device (data folder, secrets, settings and caches). Called after the services have shut down. */
+    fun deleteAllData()
+
     /** False when heavy background work should wait: app hidden and on battery, or on a metered network. */
     fun canRunBackground(): Boolean = true
 }

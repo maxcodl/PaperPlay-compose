@@ -284,7 +284,11 @@ internal fun SettingsPage(
                 Icons.Rounded.Person,
             ) { stack.add("account") }
             NavRow("Activity log", "Reads, downloads, uploads, rate limits and problems. Search, copy and save", Icons.Rounded.MonitorHeart) { stack.add("log") }
-            SettingsRow("Log out", icon = Icons.Rounded.Logout, subtitle = "Forgets the bot's credentials. Your library stays on this device", onClick = { confirm = "logout" })
+            SectionLabel("Log out")
+            SettingsRow("Log out", icon = Icons.Rounded.Logout, subtitle = "Your account (if logged in) and the main bot. The library stays on this device", onClick = { confirm = "logout" })
+            SettingsRow("Log out the bot only", icon = Icons.Rounded.SmartToy, subtitle = "Forgets the main bot's credentials. Your account stays logged in", onClick = { confirm = "logoutbot" })
+            SettingsRow("Log out the account only", icon = Icons.Rounded.Person, subtitle = "Your own login. The bot stays connected", onClick = { confirm = "accountout" })
+            SettingsRow("Log out and delete all data", icon = Icons.Rounded.DeleteForever, subtitle = "Removes the library and everything else from this device, for a fresh start", onClick = { confirm = "erase" })
         }
         "library" -> {
             NavRow("Repair library", "Read every chat again and fill in what is missing", Icons.Rounded.Build) { stack.add("repair") }
@@ -416,9 +420,15 @@ internal fun SettingsPage(
         "rescan" -> ConfirmDialog("Run a full rescan?", "Re-reads every message in your music chats at the speed set under Reading channels (Library settings or Telegram). A slower speed takes longer but avoids Telegram's rate limit.", "Rescan", backend::rescan) { confirm = null }
         "restore" -> ConfirmDialog("Restore a backup?", "This replaces your library, playlists and favorites with the backup.", "Restore", onRestore) { confirm = null }
         "clearcache" -> ConfirmDialog("Clear the cache?", "Streamed songs stored on this device are deleted. Stop playback first. They download again when played.", "Clear", { backend.clearCache { notice.value = it } }) { confirm = null }
-        "accountout" -> ConfirmDialog("Log out of your account?", "Your index stays on this device. Chats and channels need a new login.", "Log out", { backend.services.scope.launch { runCatching { backend.services.indexCloud.save() }; backend.account.logOut() } }) { confirm = null }
+        "accountout" -> ConfirmDialog("Log out of your account?", "Your index stays on this device. Chats and channels need a new login. The bot is not affected.", "Log out", backend::logOutAccount) { confirm = null }
         "clearlearned" -> ConfirmDialog("Clear what mixes have learned?", "Forgets play and skip counts and your \"doesn't fit this mix\" choices. Songs and playlists stay.", "Clear", backend::clearLearned) { confirm = null }
-        "logout" -> ConfirmDialog("Log out?", "The bot's API id, hash and token are forgotten and the setup screen shows again. Songs, playlists and settings stay.", "Log out", backend::logOut) { confirm = null }
+        "logout" -> ConfirmDialog("Log out?", "Your account is logged out (if there is one) and the main bot's API id, hash and token are forgotten, so the setup screen shows again. Songs, playlists, settings and extra bots stay.", "Log out", backend::logOutAll) { confirm = null }
+        "logoutbot" -> ConfirmDialog("Log out the bot?", "The main bot's API id, hash and token are forgotten and the setup screen shows again. Your account, songs, playlists, settings and extra bots stay.", "Log out", backend::logOutBot) { confirm = null }
+        "erase" -> ConfirmDialog(
+            "Delete all data?",
+            "This logs out your account and the bot, then deletes the library, playlists, favorites, settings, covers, cached songs, extra bots and every login from this device, and starts the app from the beginning. It cannot be undone. Your Telegram chats and the songs in them are not touched. To keep a copy first, save a backup under Storage and backup.",
+            "Delete everything", { env?.eraseEverything?.value = true },
+        ) { confirm = null }
     }
 }
 
