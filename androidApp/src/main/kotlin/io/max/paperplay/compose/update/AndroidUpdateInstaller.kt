@@ -53,12 +53,14 @@ class AndroidUpdateInstaller(private val context: Context) : UpdateInstaller {
 
     override suspend fun install(path: String): InstallBlocked? {
         if (!context.packageManager.canRequestPackageInstalls()) {
-            Toast.makeText(context, "Allow PaperPlay to install updates", Toast.LENGTH_LONG).show()
-            return InstallBlocked("Android needs your permission before PaperPlay can install updates.", "Open settings") {
+            val open = {
                 context.startActivity(
                     Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
             }
+            Toast.makeText(context, "Allow PaperPlay to install updates", Toast.LENGTH_LONG).show()
+            open() // ask now; the page keeps checking and installs as soon as it is allowed
+            return InstallBlocked("Turn on \"Allow from this source\" for PaperPlay; the install continues by itself.", "Open settings", open)
         }
         withContext(Dispatchers.IO) { commit(File(path)) }
         return null

@@ -59,6 +59,13 @@ private fun UpdateCard(updates: UpdateService) {
     val scope = rememberCoroutineScope()
     val uri = LocalUriHandler.current
     var blocked by remember { mutableStateOf<InstallBlocked?>(null) }
+    // While the install waits for a permission, look for it once a second and carry on as soon as it is granted.
+    val hooks = io.max.paperplay.ui.LocalAppEnv.current?.permissions
+    androidx.compose.runtime.LaunchedEffect(blocked) {
+        if (blocked == null || hooks == null) return@LaunchedEffect
+        while (hooks.check().firstOrNull { it.id == "install" }?.granted == false) kotlinx.coroutines.delay(1000)
+        blocked = updates.install()
+    }
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         when (val s = state) {
             UpdateState.Idle -> Text("Not checked yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
