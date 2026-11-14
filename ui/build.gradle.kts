@@ -10,6 +10,8 @@ kotlin {
         namespace = "io.max.paperplay.ui"
         compileSdk = 37
         minSdk = 26
+        // Without this the KMP Android library does not package composeResources into the APK assets.
+        androidResources.enable = true
         compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
     jvm()
