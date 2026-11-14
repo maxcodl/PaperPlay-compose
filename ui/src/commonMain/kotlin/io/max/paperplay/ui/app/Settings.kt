@@ -50,8 +50,13 @@ import io.max.paperplay.ui.components.CoverImage
 import com.kyant.backdrop.backdrops.layerBackdrop
 import io.max.paperplay.ui.isPhone
 
+/** The headings of the Settings list. Every [Category] names one, so none can be left out of the list. */
+internal enum class CategoryGroup(val label: String) {
+    Look("Look and feel"), Music("Music"), Telegram("Telegram and devices"), About("About"),
+}
+
 internal class Category(
-    val id: String, val title: String, val subtitle: String, val keywords: String, val icon: ImageVector,
+    val id: String, val title: String, val subtitle: String, val keywords: String, val icon: ImageVector, val group: CategoryGroup,
     val phoneOnly: Boolean = false, private val desktopSubtitle: String? = null,
 ) {
     /** The line shown under the title; some pages have fewer options on the desktop. */
@@ -59,17 +64,17 @@ internal class Category(
 }
 
 internal val categories = listOf(
-    Category("style", "Appearance", "Theme, colors, icons, glass look, sidebar and bar", "style look glass material expressive blur theme dark amoled accent color icons nav bar sidebar floating radius selection", Icons.Rounded.AutoAwesome),
-    Category("glass", "Glass", "Blur and tint for every glass part", "glass blur refraction tint", Icons.Rounded.BlurOn),
-    Category("listening", "Listening", "ListenBrainz, volume levelling, equalizer", "listenbrainz scrobble listens loudness replaygain equalizer eq", Icons.Rounded.GraphicEq),
-    Category("library", "Library", "Repair, sorting, duplicates, rescan, song info", "speed rate rescan duplicates sort general covers info repair fix missing songs metadata organize tidy", Icons.Rounded.LibraryMusic),
-    Category("mixes", "Mixes", "Taste learning and weather mixes", "mix taste learning weather city", Icons.Rounded.AutoAwesome),
-    Category("uploads", "Uploads", "Upload pace and skipping known songs", "upload slow skip speed parallel", Icons.Rounded.Upload),
-    Category("spotify", "Spotify import", "Import playlists from Spotify", "spotify playlist import", Icons.Rounded.PlaylistAdd),
-    Category("devices", "Devices and background", "Connect devices, keep running", "device connection sync background battery", Icons.Rounded.Devices, desktopSubtitle = "Connect other devices"),
-    Category("storage", "Storage and backup", "Cache size, backup and restore", "cache storage backup restore clear", Icons.Rounded.Storage),
-    Category("about", "About and updates", "Version, check for updates, source code", "about update updates version beta release github shizuku changelog", Icons.Rounded.Info),
-    Category("telegram", "Telegram", "Channels, your account, bot activity, log out", "bot channels account log tdlib logout speed reading copy", Icons.Rounded.Send),
+    Category("style", "Appearance", "Theme, colors, icons, glass look, sidebar and bar", "style look glass material expressive blur theme dark amoled accent color icons nav bar sidebar floating radius selection", Icons.Rounded.AutoAwesome, CategoryGroup.Look),
+    Category("glass", "Glass", "Blur and tint for every glass part", "glass blur refraction tint", Icons.Rounded.BlurOn, CategoryGroup.Look),
+    Category("listening", "Listening", "ListenBrainz, volume levelling, equalizer", "listenbrainz scrobble listens loudness replaygain equalizer eq", Icons.Rounded.GraphicEq, CategoryGroup.Music),
+    Category("mixes", "Mixes", "Taste learning and weather mixes", "mix taste learning weather city", Icons.Rounded.AutoAwesome, CategoryGroup.Music),
+    Category("library", "Library", "Repair, sorting, duplicates, rescan, song info", "speed rate rescan duplicates sort general covers info repair fix missing songs metadata organize tidy", Icons.Rounded.LibraryMusic, CategoryGroup.Music),
+    Category("uploads", "Uploads", "Upload pace and skipping known songs", "upload slow skip speed parallel", Icons.Rounded.Upload, CategoryGroup.Music),
+    Category("spotify", "Spotify import", "Import playlists from Spotify", "spotify playlist import", Icons.Rounded.PlaylistAdd, CategoryGroup.Music),
+    Category("telegram", "Telegram", "Channels, your account, bot activity, log out", "bot channels account log tdlib logout speed reading copy", Icons.Rounded.Send, CategoryGroup.Telegram),
+    Category("devices", "Devices and background", "Connect devices, keep running", "device connection sync background battery", Icons.Rounded.Devices, CategoryGroup.Telegram, desktopSubtitle = "Connect other devices"),
+    Category("storage", "Storage and backup", "Cache size, backup and restore", "cache storage backup restore clear", Icons.Rounded.Storage, CategoryGroup.Telegram),
+    Category("about", "About", "Version, updates and source code", "about update updates version beta release github shizuku changelog installer", Icons.Rounded.Info, CategoryGroup.About),
 )
 
 private val cacheLimits = listOf(1L shl 29, 1L shl 30, 2L shl 30, 5L shl 30, 10L shl 30, 20L shl 30, 50L shl 30)
@@ -156,12 +161,17 @@ private fun SettingsList(prefs: UiPrefs, stack: MutableList<String>) {
                 AppIcon(Icons.Rounded.ChevronRight, null)
             }
         }
-        shown.forEach { c -> SettingsCard(c.icon, c.title, c.text, { stack.add(c.id) }) }
         val tour = io.max.paperplay.ui.LocalAppEnv.current?.showTour
-        if (tour != null && (q.isEmpty() || "welcome tour intro about" .contains(q))) {
-            SettingsCard(Icons.Rounded.MusicNote, "Welcome tour", "Show the introduction again", { tour.value = true })
+        val tourShown = tour != null && (q.isEmpty() || "welcome tour intro".contains(q))
+        for (group in CategoryGroup.entries) {
+            val inGroup = shown.filter { it.group == group }
+            val withTour = tourShown && group == CategoryGroup.About
+            if (inGroup.isEmpty() && !withTour) continue
+            SectionLabel(group.label)
+            if (withTour) SettingsCard(Icons.Rounded.MusicNote, "Welcome tour", "Show the introduction again", { tour!!.value = true })
+            inGroup.forEach { c -> SettingsCard(c.icon, c.title, c.text, { stack.add(c.id) }) }
         }
-        if (shown.isEmpty() && q.isNotEmpty() && !"welcome tour intro about".contains(q)) Text("No settings match", Modifier.padding(24.dp))
+        if (shown.isEmpty() && !tourShown) Text("No settings match", Modifier.padding(24.dp))
         if (q.isEmpty()) MadeBy()
     }
 }

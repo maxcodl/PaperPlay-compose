@@ -15,13 +15,13 @@ import java.io.File
 import kotlin.coroutines.resume
 
 /** Installs through Shizuku: no confirmation screen, but Shizuku must be running and must have allowed PaperPlay. */
-class ShizukuInstaller(private val context: Context) {
-    val installed: Boolean
+class ShizukuInstaller(private val context: Context) : io.max.paperplay.core.update.ShizukuControl {
+    override val installed: Boolean
         get() = runCatching { context.packageManager.getPackageInfo(PACKAGE, 0); true }.getOrDefault(false)
 
-    val running: Boolean get() = Shizuku.pingBinder()
+    override val running: Boolean get() = Shizuku.pingBinder()
 
-    val allowed: Boolean get() = running && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+    override val allowed: Boolean get() = running && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
 
     /** Opens Shizuku's own grant dialog and waits for the answer. */
     suspend fun askPermission(): Boolean = suspendCancellableCoroutine { cont ->
@@ -35,6 +35,10 @@ class ShizukuInstaller(private val context: Context) {
         Shizuku.addRequestPermissionResultListener(listener)
         cont.invokeOnCancellation { Shizuku.removeRequestPermissionResultListener(listener) }
         Shizuku.requestPermission(REQUEST)
+    }
+
+    override fun ask() {
+        if (running) Shizuku.requestPermission(REQUEST) else openShizuku()
     }
 
     fun openShizuku() {

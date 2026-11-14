@@ -23,10 +23,21 @@ class Downloaded(val path: String, val sha256: String)
 /** Why an install did not start, in words for the person; null from [UpdateInstaller.install] means it started. */
 class InstallBlocked(val message: String, val actionLabel: String? = null, val action: (() -> Unit)? = null)
 
+/** What the About page needs to show and set up Shizuku. */
+interface ShizukuControl {
+    val installed: Boolean
+    val running: Boolean
+    /** Shizuku has allowed this app. */
+    val allowed: Boolean
+
+    /** Asks Shizuku to allow this app (its own dialog), or opens Shizuku when it is not running. */
+    fun ask()
+}
+
 /** The part that differs by platform: fetching the file and handing it to the system. */
 interface UpdateInstaller {
-    /** True when the device has Shizuku, so the person may choose to install without the system confirmation screen. */
-    val shizukuAvailable: Boolean get() = false
+    /** Android only: Shizuku, an optional way to install without the system confirmation screen. Null where there is no such choice. */
+    val shizuku: ShizukuControl? get() = null
 
     /** Streams [url] to a file named [name] and returns where it went and its SHA-256 (lower-case hex). Throws on failure. */
     suspend fun download(url: String, name: String, onProgress: (Float) -> Unit): Downloaded
@@ -68,7 +79,7 @@ class UpdateService(
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val state: StateFlow<UpdateState> = _state
 
-    val shizukuAvailable get() = installer?.shizukuAvailable == true
+    val shizuku get() = installer?.shizuku
 
     /** True when automatic checks are on and the last one is over a day old. */
     fun autoCheckDue() = prefs.auto && now() - prefs.lastCheck > DAY_MS

@@ -24,8 +24,7 @@ class AndroidUpdateInstaller(
     private val wantsShizuku: () -> Boolean,
     private val chooseSystem: () -> Unit,
 ) : UpdateInstaller {
-    val shizuku = ShizukuInstaller(context)
-    override val shizukuAvailable: Boolean get() = shizuku.installed
+    override val shizuku = ShizukuInstaller(context)
 
     private val dir get() = File(context.cacheDir, "updates")
 
