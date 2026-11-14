@@ -267,7 +267,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                         k.tasks -> TasksScreen(backend.tasks, Modifier.fillMaxSize().padding(bottom = barsHeight), onBack = ::goBack)
                         else -> ProfileScreen(
                             songs.size, favorites.size, lib.playlists.size, conn, prefs,
-                            mainChatTitle, updates = backend.services.updates,
+                            mainChatTitle,
                             onSettings = { id ->
                                 navigate {
                                     settings = true
@@ -286,6 +286,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                             },
                             barsHeight,
                             scan = scan,
+                            updates = backend.services.updates,
                         )
                     }
                     }
@@ -369,7 +370,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                                 k.page == "search" -> SearchScreen(backend::search, songs, currentId, actions, { d2 -> navigate { detail = d2 } }, pad)
                                 k.page == "profile" -> ProfileScreen(
                                     songs.size, favorites.size, lib.playlists.size, conn, prefs,
-                                    mainChatTitle, updates = backend.services.updates,
+                                    mainChatTitle,
                                     onSettings = { id ->
                                         navigate {
                                             settings = true
@@ -390,6 +391,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                                     },
                                     pad,
                                     scan = scan,
+                                    updates = backend.services.updates,
                                 )
                                 k.page == "tasks" -> TasksScreen(backend.tasks, onBack = ::goBack)
                                 k.page == "upload" -> Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) { TopBar("Upload"); UploadsPage(backend); androidx.compose.foundation.layout.Spacer(Modifier.height(120.dp)) }
