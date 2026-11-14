@@ -175,6 +175,15 @@ class MainActivity : ComponentActivity() {
             "wifi", "Wi-Fi network", "Local sync and Network play only reach devices on the same Wi-Fi or wired network",
             onWifi(), action = "Open settings",
         )
+        val shizuku = io.max.paperplay.compose.update.ShizukuInstaller(this)
+        if (shizuku.installed && shared?.updates?.prefs?.shizuku == true) {
+            list += io.max.paperplay.ui.PermissionState(
+                "shizuku", "Shizuku", "Lets updates install without the confirmation screen",
+                shizuku.allowed,
+                detail = when { !shizuku.running -> "Shizuku is not running"; !shizuku.allowed -> "Not allowed in Shizuku"; else -> "Shizuku is running and allowed" },
+                action = if (shizuku.running) "Allow" else "Open Shizuku",
+            )
+        }
         list += io.max.paperplay.ui.PermissionState(
             "install", "Install updates", "Lets the app install a downloaded update after you confirm it",
             packageManager.canRequestPackageInstalls(), action = "Open settings",
@@ -321,6 +330,10 @@ class MainActivity : ComponentActivity() {
                                     } else openSettings(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
                                 "battery" -> openSettings(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                                 "wifi" -> openSettings(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                                "shizuku" -> {
+                                    val z = io.max.paperplay.compose.update.ShizukuInstaller(this@MainActivity)
+                                    if (z.running) rikka.shizuku.Shizuku.requestPermission(4218) else z.openShizuku()
+                                }
                                 "install" -> openSettings(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, true)
                             }
                         },

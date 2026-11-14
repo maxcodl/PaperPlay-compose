@@ -9,9 +9,12 @@ jna = "5.19.1"
 androidxActivity = "1.13.0"
 sqldelight = "2.4.1"
 media3 = "1.11.1"
+shizuku = "13.1.5"
 vlcj = "4.12.1"
 
 [libraries]
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }

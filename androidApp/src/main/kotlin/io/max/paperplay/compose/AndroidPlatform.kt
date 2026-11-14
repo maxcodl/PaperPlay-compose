@@ -34,7 +34,11 @@ class AndroidPlatform(private val context: Context) : Platform {
     override fun createPlayer(): PlayerEngine = createPlayerEngine()
     override val deviceModel: String get() = Build.MODEL
     override val updatePlatform = io.max.paperplay.core.update.UpdatePlatform.Android
-    override val updateInstaller: io.max.paperplay.core.update.UpdateInstaller = io.max.paperplay.compose.update.AndroidUpdateInstaller(context)
+    override val updateInstaller: io.max.paperplay.core.update.UpdateInstaller = io.max.paperplay.compose.update.AndroidUpdateInstaller(
+        context,
+        wantsShizuku = { settings.get("update_installer") == "shizuku" },
+        chooseSystem = { settings.put("update_installer", "system") },
+    )
     override val appVersion: String = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "dev"
 
     override fun canRunBackground(): Boolean = runCatching {

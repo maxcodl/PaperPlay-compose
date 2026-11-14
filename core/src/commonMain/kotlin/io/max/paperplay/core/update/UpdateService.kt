@@ -25,6 +25,9 @@ class InstallBlocked(val message: String, val actionLabel: String? = null, val a
 
 /** The part that differs by platform: fetching the file and handing it to the system. */
 interface UpdateInstaller {
+    /** True when the device has Shizuku, so the person may choose to install without the system confirmation screen. */
+    val shizukuAvailable: Boolean get() = false
+
     /** Streams [url] to a file named [name] and returns where it went and its SHA-256 (lower-case hex). Throws on failure. */
     suspend fun download(url: String, name: String, onProgress: (Float) -> Unit): Downloaded
 
@@ -64,6 +67,8 @@ class UpdateService(
 ) {
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val state: StateFlow<UpdateState> = _state
+
+    val shizukuAvailable get() = installer?.shizukuAvailable == true
 
     /** True when automatic checks are on and the last one is over a day old. */
     fun autoCheckDue() = prefs.auto && now() - prefs.lastCheck > DAY_MS

@@ -18,7 +18,15 @@ import java.net.URL
 import java.security.MessageDigest
 
 /** Downloads the APK into the app's cache and hands it to Android's package installer, which asks the person to confirm. */
-class AndroidUpdateInstaller(private val context: Context) : UpdateInstaller {
+class AndroidUpdateInstaller(
+    private val context: Context,
+    /** True when the person chose Shizuku; the choice lives in the update settings. */
+    private val wantsShizuku: () -> Boolean,
+    private val chooseSystem: () -> Unit,
+) : UpdateInstaller {
+    val shizuku = ShizukuInstaller(context)
+    override val shizukuAvailable: Boolean get() = shizuku.installed
+
     private val dir get() = File(context.cacheDir, "updates")
 
     override suspend fun download(url: String, name: String, onProgress: (Float) -> Unit): Downloaded = withContext(Dispatchers.IO) {
@@ -52,6 +60,7 @@ class AndroidUpdateInstaller(private val context: Context) : UpdateInstaller {
     }
 
     override suspend fun install(path: String): InstallBlocked? {
+        if (wantsShizuku()) return shizuku.install(path, chooseSystem)
         if (!context.packageManager.canRequestPackageInstalls()) {
             val open = {
                 context.startActivity(

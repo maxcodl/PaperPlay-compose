@@ -45,6 +45,10 @@ internal fun AboutPage(backend: CoreBackend) {
     var auto by remember { mutableStateOf(updates.prefs.auto) }
     SwitchRow("Beta updates", beta, { updates.prefs.beta = it; beta = it }, Icons.Rounded.NewReleases,
         "Also offer pre-releases. They arrive sooner and may have rough edges")
+    if (updates.shizukuAvailable) {
+        var shizuku by remember { mutableStateOf(updates.prefs.shizuku) }
+        SwitchRow("Install with Shizuku", shizuku, { updates.prefs.shizuku = it; shizuku = it }, subtitle = "Installs updates without the confirmation screen. Shizuku must be running")
+    }
     SwitchRow("Check automatically", auto, { updates.prefs.auto = it; auto = it }, subtitle = "At most once a day, when the app starts")
     SectionLabel("Project")
     SettingsRow("Source code", icon = Icons.Rounded.Code, subtitle = "github.com/maxcodl/PaperPlay-compose", onClick = { uri.openUri(REPO) })

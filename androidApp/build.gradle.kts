@@ -14,6 +14,7 @@ val signing = rootProject.file("local.properties").takeIf { it.exists() }
 android {
     namespace = "io.max.paperplay.compose"
     compileSdk = 37
+    buildFeatures { aidl = true }
     defaultConfig {
         applicationId = "io.max.paperplay.compose"
         minSdk = 26
@@ -76,5 +77,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":player"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 }
