@@ -1,6 +1,6 @@
 # PaperPlay Compose: what's done and what's left
 
-Updated 14 Nov 2026 (section 6 is the 13 Nov code audit; the 14 Nov updates at the end cover the motion work and CI). Everything compiles and CI builds it; most of it has not been tried on a device, and `[x]` in section 1 was not individually re-checked)
+Updated 14 Nov 2026 (section 6 is the 13 Nov code audit; the 14 Nov updates at the end cover the motion work, CI, releases, the updater and the About page). Everything compiles and CI builds it; most of it has not been tried on a device, and `[x]` in section 1 was not individually re-checked)
 
 **Marks:** `[x]` done and written, `[~]` half done, `[ ]` not done.
 "Compiles, not tried" means the Android release and desktop release built on 12 Nov (night) but the feature has not been tried on a device.
@@ -422,7 +422,7 @@ Removed on 13 Nov: `account/Stubs.kt` (`NoAccount`, `NoIndex`) and the empty `li
 ### 6e. Build and CI to do
 - [ ] Find the test that hangs `:core:jvmTest` on CI (one run ran 6 hours, run 31 ran 53 minutes), then put the tests back in the workflow
 - [x] Windows CI job failed every time at the "Get libvlc" step: it now downloads with `curl --fail` from download.videolan.org and unzips with 7-Zip; the TDLib step no longer fails when the `deps` release is missing (14 Nov). The installers then built (`PaperPlay-1.2.0.exe` and `.msi`) but "Collect files" failed: `packageDistributionForCurrentOS` does not create the unpacked `main\app\PaperPlay` folder the zip step reads, only `createDistributable` does. The build step now runs both
-- [x] Linux and Windows jobs are back on and green (14 Nov, run #46: Windows zip, MSI and setup exe, Linux archive); the release-publishing job is still off (remove the leading `false &&` from its condition)
+- [x] Linux and Windows jobs are back on and green (14 Nov, run #46: Windows zip, MSI and setup exe, Linux archive); the release-publishing job is now on (see the automatic releases update below)
 - [x] README now says Gradle runs on a JDK 25 daemon it downloads on first use. A machine that cannot reach the download (or the Google Maven repository for the Android plugin) cannot build
 - [ ] The new tests have never been run: `backgroundAndStandbyFollowTheLayoutChoice` (backup prefs), `oldWrongTriesDoNotAddUpToALockout` and `aSuccessClearsTheOverallCount` (pairing)
 
@@ -469,7 +469,7 @@ Open:
 - [x] Version and releases from the commit subjects (`scripts/release/release.py`, 17 tests): `feat:` minor, `fix:`/`perf:` patch, `!` major, no prefix patch; docs/chore/ci/build/style/test/refactor never release alone. Push to `beta` = numbered pre-release, push to `main` = stable. One shared version for Android and desktop, first release 1.3.0; Android `versionCode` is the commit count
 - [x] Change log: grouped notes on every GitHub release (Added, Fixed, Improved, Documentation, Other changes) and a `CHANGELOG.md` section committed to `main` by each stable release
 - [x] The version is passed to Gradle as `-PappVersion` / `-PappVersionCode`; local builds read `version.properties`. The app reads it for the Telegram client string (`PackageInfo.versionName` on Android, `paperplay.version` on desktop)
-- [ ] First run on GitHub: check the `version` job output, the pre-release and its files, that the APK installs over the current app, and that a `docs:` push creates no release. If `main` blocks pushes from the workflow, the CHANGELOG step needs a bypass for the Actions bot
+- [x] (done 14 Nov, see the next update) First run on GitHub: check the `version` job output, the pre-release and its files, that the APK installs over the current app, and that a `docs:` push creates no release. If `main` blocks pushes from the workflow, the CHANGELOG step needs a bypass for the Actions bot
 
 
 ## Update 2026-11-14 (in-app updates, About page; compiles in CI, not tried on a device)
@@ -487,7 +487,15 @@ Open:
 - [x] Settings list is grouped under headings (Look and feel, Music, Telegram and devices, About) with About last; every category must name a group, so none can be dropped. The desktop sidebar has the same headings
 - [x] About (renamed from "About and updates") has an Installation method choice (System installer or Shizuku) with Shizuku's state and its Allow / Open Shizuku button directly below, also when Shizuku is not installed (choosing it then says "Install Shizuku first")
 - [x] Profile ends with an About card (icon, version, channel, "Update X available") that opens About, with the Made by line under it
-- [x] The tour's logo is the real launcher icon on every platform (blue square, purple scallop, white plane). Its loop: the plane flies off, a music note pops up, the plane comes back and hits it, the note spins away in sparkles and the icon squashes and springs back. Reduce motion shows it still. The tour background also has slowly rising notes and dots
+- [x] The tour's logo is the launcher icon on every platform (first built as a redrawn badge, replaced the same day by the launcher's own plane image; see the last entry of this update). Its loop: the plane flies off, a music note pops up, the plane comes back and hits it, the note spins away in sparkles and the icon squashes and springs back. Reduce motion shows it still. The tour background also has slowly rising notes and dots
 - [ ] Try on a device: the timing of the logo loop and the calmness of the background (constants at the top of `AnimatedLogo.kt` and in `GradientBackdrop`)
 - [x] About page cleanup (14 Nov, compiles in CI, not tried): one header with the icon, version, update status and a single button that follows the state; Update channel and Installation method are drop-down rows (`DropdownRow` in `SettingsUi.kt`); Shizuku's state shows inside the Installation method row, with its Open Shizuku / Allow button; Check automatically stays a switch; the three links are tight rows. Choosing Shizuku when it is not installed says "Install Shizuku first" in that row
 - [x] The in-app logo (tour first page, Profile About card, About header) now draws the launcher's own plane image (`ui/src/commonMain/composeResources/drawable/app_plane.png`, a copy of `ic_launcher_foreground.png`) on a flat blue square, the way the launcher shows it. The redrawn purple scalloped badge and hand-built plane are gone. The desktop window icon (`desktopApp/.../icon.png`) is a different, scalloped badge; the in-app logo follows the Android launcher
+
+## Update 2026-11-14 (first stable release, beta numbering, state of the updater)
+- [x] The first stable release `v1.3.0` was published when `beta` was merged into `main` (PR #4), with `CHANGELOG.md` and `version.properties` committed to `main` by the release job. Changelog entry, release assets and the pre-release flow all worked on GitHub; a `docs:` push did not create a release
+- [x] Bug found and fixed: beta numbering counts from the last stable tag that `beta` contains. Until `main` was merged back into `beta`, the next beta was `v1.3.0-beta.6`, which sorts below the stable `1.3.0`, so the in-app updater never offered it. After the merge-back the plan gave `v1.3.1-beta.1`. Rule: after every merge of `beta` into `main`, merge `main` into `beta` (README, Releases and versions)
+- [x] On the phone (14 Nov): About shows the version and the update check answers "You have the latest version"; Shizuku shows "Running and allowed" (a running Shizuku now counts as installed, because the package lookup was hidden from the app); the grouped Settings, Profile About card and the new logo were looked at
+- [ ] Not seen yet: an actual update installed through Shizuku and through the system installer; the Install-unknown-apps prompt on a phone where it is off; the logo loop (plane flies off, note, hit) and the tour background in motion; Log out and delete all data; the three narrower logout options
+- [ ] The `deps` release with `tdlib-windows.zip` still does not exist, so Windows and Linux builds cannot reach Telegram
+- [ ] Open: `INSTALL_FAILED_NO_MATCHING_ABIS` when installing the signed debug APK from CI on the phone, and the memory-leak candidates from the 14 Nov investigation (nothing changed for them yet)
