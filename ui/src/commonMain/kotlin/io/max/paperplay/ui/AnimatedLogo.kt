@@ -2,7 +2,6 @@ package io.max.paperplay.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -24,6 +23,7 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -33,7 +33,12 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import io.max.paperplay.ui.res.Res
+import io.max.paperplay.ui.res.app_plane
+import org.jetbrains.compose.resources.imageResource
 import io.max.paperplay.ui.theme.LocalReduceMotion
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.PI
@@ -41,9 +46,8 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 
-// The launcher icon: a blue rounded square, a purple scalloped badge and a white paper plane.
-private val LogoBlue = Color(0xFF2563EB)
-private val LogoPurple = Color(0xFF5B3BB5)
+// The launcher icon: a flat blue square with the white paper plane. The plane is the launcher's own image (res/drawable-xxxhdpi/ic_launcher_foreground.png).
+private val LogoBlue = Color(0xFF1E64DC)
 private val LogoInk = Color.White
 
 // One loop of the story. The beats are fractions of the loop (LOOP_MS long); the order is bob, fly out, note appears,
@@ -74,19 +78,17 @@ internal fun AnimatedLogo(modifier: Modifier = Modifier, size: Dp = 96.dp) {
     val pop = remember { Animatable(if (reduced) 1f else 0f) }
     LaunchedEffect(Unit) { if (!reduced) pop.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = Spring.StiffnessLow)) }
     if (reduced) {
-        LogoCanvas(0f, 0f, 0f, modifier, size)
+        LogoCanvas(0f, modifier, size)
         return
     }
     val t = rememberInfiniteTransition(label = "logo")
     val cycle by t.animateFloat(0f, 1f, infiniteRepeatable(tween(LOOP_MS, easing = LinearEasing)), label = "cycle")
-    val spin by t.animateFloat(0f, 360f, infiniteRepeatable(tween(24000, easing = LinearEasing)), label = "spin")
-    val ripple by t.animateFloat(0f, (2 * PI).toFloat(), infiniteRepeatable(tween(3400, easing = LinearEasing), RepeatMode.Restart), label = "ripple")
-    LogoCanvas(cycle, spin, ripple, modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }, size)
+    LogoCanvas(cycle, modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }, size)
 }
 
 /** The icon standing still, for places that only show it (the About card on Profile). */
 @Composable
-internal fun StaticLogo(modifier: Modifier = Modifier, size: Dp = 56.dp) = LogoCanvas(0f, 0f, 0f, modifier, size)
+internal fun StaticLogo(modifier: Modifier = Modifier, size: Dp = 56.dp) = LogoCanvas(0f, modifier, size)
 
 private class Flight(val dx: Float, val lift: Float, val tilt: Float, val trail: Float)
 
@@ -120,13 +122,11 @@ private fun flight(cycle: Float): Flight = when {
     else -> Flight(0f, 0f, 0f, 0f)
 }
 
-/**
- * Draws the icon for one moment of the loop: [cycle] 0..1, the badge's [spin] in degrees and its [ripple] phase.
- * A pure function of its inputs, so each beat can be previewed.
- */
+/** Draws the icon for one moment of the loop ([cycle] 0..1). A pure function of its inputs, so each beat can be previewed. */
 @Composable
-internal fun LogoCanvas(cycle: Float, spin: Float, ripple: Float, modifier: Modifier = Modifier, size: Dp = 96.dp) {
+internal fun LogoCanvas(cycle: Float, modifier: Modifier = Modifier, size: Dp = 96.dp) {
     val note = rememberVectorPainter(Icons.Rounded.MusicNote)
+    val plane = imageResource(Res.drawable.app_plane)
     Canvas(modifier.size(size)) {
         val s = this.size.minDimension
         val c = Offset(s / 2, s / 2)
@@ -136,17 +136,6 @@ internal fun LogoCanvas(cycle: Float, spin: Float, ripple: Float, modifier: Modi
         val squash = if (cycle < HIT) 0f else sin(squashT * PI).toFloat() * (1f - squashT)
         scale(1f - 0.05f * squash, 1f + 0.04f * squash, c) {
             drawRoundRect(LogoBlue, size = Size(s, s), cornerRadius = CornerRadius(s * 0.34f))
-
-            val badge = Path()
-            val steps = 120
-            for (i in 0..steps) {
-                val a = i * 2 * PI / steps
-                val r = s * 0.36f * (1f + 0.055f * sin(10 * a + ripple).toFloat())
-                val p = Offset(c.x + (r * cos(a)).toFloat(), c.y + (r * sin(a)).toFloat())
-                if (i == 0) badge.moveTo(p.x, p.y) else badge.lineTo(p.x, p.y)
-            }
-            badge.close()
-            rotate(spin, c) { drawPath(badge, LogoPurple) }
 
             clipPath(Path().apply { addRoundRect(RoundRect(0f, 0f, s, s, CornerRadius(s * 0.34f))) }) {
                 drawNote(note, cycle, s)
@@ -160,15 +149,10 @@ internal fun LogoCanvas(cycle: Float, spin: Float, ripple: Float, modifier: Modi
                                 strokeWidth = s * 0.028f, cap = StrokeCap.Round,
                             )
                         }
-                        val plane = Path().apply {
-                            // The launcher icon's plane, point for point.
-                            moveTo(s * 0.37f, s * 0.31f)
-                            lineTo(s * 0.72f, s * 0.50f)
-                            lineTo(s * 0.37f, s * 0.69f)
-                            lineTo(s * 0.556f, s * 0.50f)
-                            close()
-                        }
-                        drawPath(plane, LogoInk)
+                        // The launcher's adaptive icon shows the middle two thirds of its canvas, with the plane inset 16%: that is 1.02 times the icon.
+                        val side = (s * 1.02f).toInt()
+                        val edge = ((s - side) / 2f).toInt()
+                        drawImage(plane, dstOffset = IntOffset(edge, edge), dstSize = IntSize(side, side), filterQuality = FilterQuality.High)
                     }
                 }
             }
@@ -219,16 +203,16 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.placeNote(
 
 @Preview(name = "Bobbing", widthDp = 120, heightDp = 120)
 @Composable
-private fun LogoBobbingPreview() = LogoCanvas(0.12f, 40f, 1f)
+private fun LogoBobbingPreview() = LogoCanvas(0.12f)
 
 @Preview(name = "Note appears", widthDp = 120, heightDp = 120)
 @Composable
-private fun LogoNotePreview() = LogoCanvas(0.52f, 120f, 2f)
+private fun LogoNotePreview() = LogoCanvas(0.52f)
 
 @Preview(name = "Plane returns", widthDp = 120, heightDp = 120)
 @Composable
-private fun LogoReturnPreview() = LogoCanvas(0.74f, 200f, 3f)
+private fun LogoReturnPreview() = LogoCanvas(0.74f)
 
 @Preview(name = "Hit", widthDp = 120, heightDp = 120)
 @Composable
-private fun LogoHitPreview() = LogoCanvas(0.80f, 240f, 4f)
+private fun LogoHitPreview() = LogoCanvas(0.80f)
