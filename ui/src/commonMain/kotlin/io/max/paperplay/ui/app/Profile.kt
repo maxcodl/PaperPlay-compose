@@ -42,6 +42,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,6 +82,7 @@ fun ProfileScreen(
     bottomPadding: Dp,
     modifier: Modifier = Modifier,
     scan: androidx.compose.runtime.State<ScanUi?>? = null,
+    updates: io.max.paperplay.core.update.UpdateService? = null,
 ) {
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = bottomPadding + 32.dp)) {
         item {
@@ -134,6 +137,33 @@ fun ProfileScreen(
                 }
             }
         }
+        if (updates != null) item { AboutCard(updates) { onSettings("about") } }
+    }
+}
+
+/** The end of Profile: the app, its version and channel, a note when an update is waiting, and the maker's line. Tapping opens Settings > About. */
+@Composable
+private fun AboutCard(updates: io.max.paperplay.core.update.UpdateService, onOpen: () -> Unit) {
+    val state by updates.state.collectAsState()
+    val available = (state as? io.max.paperplay.core.update.UpdateState.Available)?.release?.version
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().partSurface(LookGroup.Cards, MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(28.dp))
+                .clickable(onClickLabel = "Open About", onClick = onOpen).padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            io.max.paperplay.ui.StaticLogo(size = 56.dp)
+            Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                Text("Paper Play", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Version ${updates.installed} · ${if (updates.prefs.beta) "Beta" else "Stable"} updates",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (available != null) Text("Update $available available", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            }
+            AppIcon(Icons.Rounded.ChevronRight, null)
+        }
+        MadeBy()
     }
 }
 

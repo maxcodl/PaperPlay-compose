@@ -267,7 +267,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                         k.tasks -> TasksScreen(backend.tasks, Modifier.fillMaxSize().padding(bottom = barsHeight), onBack = ::goBack)
                         else -> ProfileScreen(
                             songs.size, favorites.size, lib.playlists.size, conn, prefs,
-                            mainChatTitle,
+                            mainChatTitle, updates = backend.services.updates,
                             onSettings = { id ->
                                 navigate {
                                     settings = true
@@ -369,7 +369,7 @@ fun MainShell(backend: CoreBackend, prefs: UiPrefs, onRestore: () -> Unit, open:
                                 k.page == "search" -> SearchScreen(backend::search, songs, currentId, actions, { d2 -> navigate { detail = d2 } }, pad)
                                 k.page == "profile" -> ProfileScreen(
                                     songs.size, favorites.size, lib.playlists.size, conn, prefs,
-                                    mainChatTitle,
+                                    mainChatTitle, updates = backend.services.updates,
                                     onSettings = { id ->
                                         navigate {
                                             settings = true
