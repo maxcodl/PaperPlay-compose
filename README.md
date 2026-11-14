@@ -137,8 +137,8 @@ below the stable one, so the updater would not offer it.
 
 ## Updating
 
-**Settings > About** checks GitHub Releases for a newer version (when the app starts, at most once a day, or
-when you tap *Check for updates*) and shows what changed.
+**Settings > About** checks GitHub Releases for a newer version (every time the app starts, or
+when you tap *Check for updates*), shows what changed, and offers a dialog at launch when a newer version exists.
 
 - **Channels:** stable by default; set *Update channel* to *Beta pre-releases* to also get pre-releases.
 - **Safety:** files are only downloaded from this project's releases, checked against the release's `SHA256SUMS.txt`, and
