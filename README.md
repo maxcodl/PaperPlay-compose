@@ -55,7 +55,7 @@ Download from the **Releases** page: stable releases (`v1.3.0`) and numbered pre
 | File | What it is |
 |---|---|
 | `PaperPlay-<version>-android-release.apk` | Android app, signed with the key stored in the repository secrets |
-| `PaperPlay-<version>-windows-x64.zip`, `.msi`, `-setup.exe` | Windows app: zip, MSI installer and setup exe |
+| `PaperPlay-<version>-windows-x64.zip` and `-setup.exe` | Windows app: zip and setup exe |
 | `PaperPlay-<version>-linux-x64.tar.gz` | Linux app |
 | `SHA256SUMS.txt` | checksums of the files above (the in-app updater checks them) |
 

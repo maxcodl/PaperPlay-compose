@@ -110,7 +110,7 @@ jobs:
           if-no-files-found: error
 
   desktop-windows:
-    name: Desktop (Windows zip, MSI and setup exe)
+    name: Desktop (Windows zip and setup exe)
     needs: version
     runs-on: windows-latest
     steps:
@@ -157,19 +157,22 @@ jobs:
             Write-Warning "No 'deps' release with tdlib-windows.zip: the Windows build will not include TDLib."
           }
 
-      - name: Build app image, MSI and setup exe
+      - name: Build release app image
         shell: cmd
-        # createDistributable makes the unpacked app folder the zip needs; the package tasks only make the installers.
-        run: gradlew.bat :desktopApp:createDistributable :desktopApp:packageDistributionForCurrentOS -PappVersion=${{ needs.version.outputs.version }} -PappVersionCode=${{ needs.version.outputs.code }} --no-daemon
+        # Same build as scripts/release.ps1: the minified release image, then the Inno Setup installer.
+        run: gradlew.bat :desktopApp:createReleaseDistributable -PappVersion=${{ needs.version.outputs.version }} -PappVersionCode=${{ needs.version.outputs.code }} --no-daemon
 
-      - name: Collect files
+      - name: Build setup exe and zip
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           $v = "${{ needs.version.outputs.version }}"
-          Compress-Archive -Path "desktopApp\build\compose\binaries\main\app\PaperPlay" -DestinationPath "dist\PaperPlay-$v-windows-x64.zip" -Force
-          Copy-Item (Get-ChildItem "desktopApp\build\compose\binaries\main\msi\*.msi" | Select-Object -First 1) "dist\PaperPlay-$v-windows-x64.msi"
-          Copy-Item (Get-ChildItem "desktopApp\build\compose\binaries\main\exe\*.exe" | Select-Object -First 1) "dist\PaperPlay-$v-windows-x64-setup.exe"
+          $app = (Resolve-Path "desktopApp\build\compose\binaries\main-release\app\PaperPlay").Path
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=$($v -replace '-.*$','')" "/DAppDir=$app" "/DOutDir=$PWD\dist" "/FPaperPlay-$v-windows-x64-setup" desktopApp\installer\PaperPlay.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+          Compress-Archive -Path $app -DestinationPath "dist\PaperPlay-$v-windows-x64.zip" -Force
 
       - uses: actions/upload-artifact@v4
         with:
