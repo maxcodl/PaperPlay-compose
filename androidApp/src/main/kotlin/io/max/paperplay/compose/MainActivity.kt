@@ -175,6 +175,10 @@ class MainActivity : ComponentActivity() {
             "wifi", "Wi-Fi network", "Local sync and Network play only reach devices on the same Wi-Fi or wired network",
             onWifi(), action = "Open settings",
         )
+        list += io.max.paperplay.ui.PermissionState(
+            "install", "Install updates", "Lets the app install a downloaded update after you confirm it",
+            packageManager.canRequestPackageInstalls(), action = "Open settings",
+        )
         return list
     }
 
@@ -317,6 +321,7 @@ class MainActivity : ComponentActivity() {
                                     } else openSettings(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
                                 "battery" -> openSettings(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                                 "wifi" -> openSettings(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                                "install" -> openSettings(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, true)
                             }
                         },
                         openAppSettings = { openSettings(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true) },
