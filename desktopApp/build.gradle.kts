@@ -102,6 +102,8 @@ afterEvaluate {
 compose.desktop {
     application {
         mainClass = "io.max.paperplay.desktop.MainKt"
+        // CI: Gradle itself runs on a downloaded JDK 25 without jmods, and ProGuard reads the JDK classes from the jmods of this home.
+        System.getenv("PAPERPLAY_JAVA_HOME")?.let { javaHome = it }
         // Without limits the JVM grows its heap to a quarter of the machine's RAM and keeps it. Serial GC needs no extra GC threads or
         // regions, and the free-ratio flags hand unused heap back to the OS.
         jvmArgs += listOf("-Xms32m", "-Xmx448m", "-XX:+UseSerialGC", "-XX:MinHeapFreeRatio=10", "-XX:MaxHeapFreeRatio=30", "-Xss512k", "-XX:ReservedCodeCacheSize=64m", "-XX:MaxMetaspaceSize=160m", "-Xshare:auto", "-Dpaperplay.version=${rootProject.extra["appVersion"]}")

@@ -159,6 +159,8 @@ jobs:
 
       - name: Build release app image
         shell: cmd
+        env:
+          PAPERPLAY_JAVA_HOME: ${{ env.JAVA_HOME }}
         # Same build as scripts/release.ps1: the minified release image, then the Inno Setup installer.
         run: gradlew.bat :desktopApp:createReleaseDistributable -PappVersion=${{ needs.version.outputs.version }} -PappVersionCode=${{ needs.version.outputs.code }} --no-daemon
 
