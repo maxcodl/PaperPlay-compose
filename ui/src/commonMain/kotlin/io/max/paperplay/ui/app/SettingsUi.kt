@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -85,6 +86,29 @@ fun SettingsRow(
 @Composable
 fun NavRow(title: String, subtitle: String? = null, icon: ImageVector? = null, onClick: () -> Unit) =
     SettingsRow(title, icon = icon, subtitle = subtitle, onClick = onClick) { AppIcon(Icons.Rounded.ChevronRight, null) }
+
+/** A row whose value is picked from a drop-down menu: the current choice and an arrow on the right, the options in a menu. [extra] sits before the value (a button, for example). */
+@Composable
+fun <T> DropdownRow(
+    title: String, selected: T, options: List<T>, label: (T) -> String, onSelect: (T) -> Unit,
+    icon: ImageVector? = null, subtitle: String? = null, extra: @Composable () -> Unit = {},
+) {
+    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    SettingsRow(title, icon = icon, subtitle = subtitle, onClick = { open = true }) {
+        extra()
+        Box {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(label(selected), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                AppIcon(Icons.Rounded.ExpandMore, null)
+            }
+            androidx.compose.material3.DropdownMenu(open, { open = false }) {
+                options.forEach { o ->
+                    androidx.compose.material3.DropdownMenuItem({ Text(label(o)) }, { open = false; onSelect(o) })
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun SwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit, icon: ImageVector? = null, subtitle: String? = null) =
