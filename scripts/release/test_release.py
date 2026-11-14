@@ -25,6 +25,7 @@ class Parsing(unittest.TestCase):
         self.assertEqual(c("chore(release): v1.3.0").bump, r.NONE)
         self.assertEqual(c("feat!: drop the old backup format").bump, r.MAJOR)
         self.assertEqual(c("fix: x", body="BREAKING CHANGE: new format").bump, r.MAJOR)
+        self.assertEqual(c("feat: x", body="- rules: feat minor, ! or BREAKING CHANGE major").bump, r.MINOR)
 
     def test_no_type_is_a_patch_and_keeps_the_whole_subject(self):
         x = c("Lists glide, covers fade in")

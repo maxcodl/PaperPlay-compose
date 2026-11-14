@@ -57,7 +57,8 @@ class Commit:
 
 def parse_commit(sha: str, subject: str, body: str = "") -> Commit:
     subject = subject.strip()
-    breaking = "BREAKING CHANGE" in body or "BREAKING-CHANGE" in body
+    # Only a footer line that starts with the marker counts; prose that mentions it does not.
+    breaking = any(line.startswith(("BREAKING CHANGE:", "BREAKING-CHANGE:")) for line in body.splitlines())
     m = _PREFIX.match(subject)
     if m and m["type"].lower() in KNOWN:
         return Commit(sha, m["type"].lower(), m["text"].strip(), breaking or bool(m["bang"]))
