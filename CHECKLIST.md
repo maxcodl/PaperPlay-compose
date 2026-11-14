@@ -471,3 +471,12 @@ Open:
 - [x] The version is passed to Gradle as `-PappVersion` / `-PappVersionCode`; local builds read `version.properties`. The app reads it for the Telegram client string (`PackageInfo.versionName` on Android, `paperplay.version` on desktop)
 - [ ] First run on GitHub: check the `version` job output, the pre-release and its files, that the APK installs over the current app, and that a `docs:` push creates no release. If `main` blocks pushes from the workflow, the CHANGELOG step needs a bypass for the Actions bot
 
+
+## Update 2026-11-14 (in-app updates, About page; compiles in CI, not tried on a device)
+- [x] First run on GitHub worked: run #55 published the pre-release `v1.3.0-beta.1` with grouped notes. A mention of "BREAKING CHANGE" in a commit message body no longer counts as a major bump (only a line starting with `BREAKING CHANGE:` does)
+- [x] Settings > About and updates: version, check for updates, release notes, download with progress, SHA-256 check against `SHA256SUMS.txt`, install, skip this version; *Beta updates* (pre-releases) and *Check automatically* switches. The start-up check runs at most once a day and shows an "Update X available" snackbar that opens About
+- [x] Android installs through the package installer. A missing "install unknown apps" permission shows a toast, opens that settings screen and the update continues once it is allowed; Settings > Permissions has an "Install updates" row
+- [x] Optional Shizuku installer (shown when Shizuku is installed): asks Shizuku for permission, toasts "Start Shizuku first" or "Shizuku permission denied", offers the system installer instead; never switches on its own. Permissions has a Shizuku row while it is selected. The AIDL service is the likeliest thing to need a fix
+- [x] Windows runs the downloaded setup; Linux opens the release page
+- [x] Footer "Made by Max with heart and coffee" at the end of About and of the Settings list, both icons in the theme's accent colour
+- [ ] Try on a device: two releases are needed (install the older one, publish a newer one), then check the check, download, permission prompt, system install, Shizuku install, the beta switch, and the footer colours

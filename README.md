@@ -127,6 +127,19 @@ Android and desktop share one version, and the Android `versionCode` is the comm
 the GitHub Releases page, and each stable release is also added to [`CHANGELOG.md`](CHANGELOG.md). The logic lives in
 `scripts/release/release.py` (run `python3 scripts/release/test_release.py` for its tests).
 
+## Updating
+
+**Settings > About and updates** checks GitHub Releases for a newer version (when the app starts, at most once a day, or
+when you tap *Check for updates*) and shows what changed.
+
+- **Channels:** stable by default; turn on *Beta updates* to also get pre-releases.
+- **Safety:** files are only downloaded from this project's releases, checked against the release's `SHA256SUMS.txt`, and
+  never installed until you tap Install. Android also refuses an update signed with a different key.
+- **Android:** the system installer asks you to confirm. If PaperPlay is not yet allowed to install apps, it opens that
+  settings screen and carries on when you allow it. With **Shizuku** installed, *Install with Shizuku* skips the
+  confirmation screen; Shizuku must be running and must allow PaperPlay.
+- **Windows:** the downloaded setup is started. **Linux:** the release page opens.
+
 ## Configuration
 
 You provide your own Telegram API id, API hash and bot token in the first-run setup or Settings. They are stored on the
