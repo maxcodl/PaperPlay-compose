@@ -62,8 +62,8 @@ Download from the **Releases** page: stable releases (`v1.3.0`) and numbered pre
 Every push to `main` or `beta` is also built by GitHub Actions; the debug Android APK is only a workflow artifact
 (`PaperPlay-Android-debug`).
 
-The Windows and Linux builds only include TDLib (the Telegram library) when the repository has a release tagged `deps`
-with a `tdlib-windows.zip`; without it they build but cannot reach Telegram.
+The Windows build includes TDLib (the Telegram library) from the DLLs in `desktopApp/third_party/tdlib`; the Linux build
+does not include TDLib yet and cannot reach Telegram.
 
 The workflow is `.github/workflows/build.yml`. The tests are switched off in it because one test in `:core:jvmTest` hangs
 on the runner.

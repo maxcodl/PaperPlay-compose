@@ -508,3 +508,9 @@ Open:
 - [x] The Inno setup warns when an older install exists in Program Files; the 1.3.1 release on GitHub still has the old jpackage installer
 - [x] The MSI copy in Program Files was uninstalled on the PC (exit 3010, restart or closing the running app finishes it)
 - [ ] Open: the GitHub setup exe should be near 82 MB but the goal is under 80 MB. Biggest parts of the 162 MB image: `tdjson.dll` 28 MB, JVM runtime 49 MB, `skiko` 14 MB, `icudtl.dat` 10 MB. Try `Compression=lzma2/ultra64` first, then measure the CI build before cutting anything
+
+## Update 2026-11-14 (CI fixes, TDLib in the Windows build)
+- [x] CI ProGuard failed (`IncompleteClassHierarchyException`): Gradle runs on a downloaded JDK 25 (`gradle-daemon-jvm.properties`) that has no jmods. The workflow now sets `PAPERPLAY_JAVA_HOME` to the Temurin 17 and `desktopApp/build.gradle.kts` uses it as `javaHome`. Worked: `v1.4.0-beta.1` has a 65 MB setup exe, a 76 MB zip and no MSI
+- [x] That beta had no `tdjson.dll` (the `deps` release was never made), so it could not reach Telegram. TDLib's four Windows DLLs now live in `desktopApp/third_party/tdlib` and the Gradle default reads them; the `deps` download step is gone from the workflow. The Windows installer should grow back toward 80 MB
+- [ ] Linux still has no TDLib
+- [ ] Not tried: installing the CI setup exe over the script-built install (same `AppId`, should upgrade in place); the update dialog on launch
