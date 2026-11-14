@@ -465,3 +465,9 @@ Open:
 - [x] Each tab keeps its scroll position while you are on another page (`rememberSaveableStateHolder`, phone and desktop; detail, Settings and Tasks pages are not saved)
 - [ ] Try on the phone: leave a long list half way, open an album and come back; skip songs and watch the title and cover; press the nav bar and mini player quickly
 
+## Update 2026-11-14 (automatic releases; compiles in CI once pushed, never run on GitHub before)
+- [x] Version and releases from the commit subjects (`scripts/release/release.py`, 17 tests): `feat:` minor, `fix:`/`perf:` patch, `!` major, no prefix patch; docs/chore/ci/build/style/test/refactor never release alone. Push to `beta` = numbered pre-release, push to `main` = stable. One shared version for Android and desktop, first release 1.3.0; Android `versionCode` is the commit count
+- [x] Change log: grouped notes on every GitHub release (Added, Fixed, Improved, Documentation, Other changes) and a `CHANGELOG.md` section committed to `main` by each stable release
+- [x] The version is passed to Gradle as `-PappVersion` / `-PappVersionCode`; local builds read `version.properties`. The app reads it for the Telegram client string (`PackageInfo.versionName` on Android, `paperplay.version` on desktop)
+- [ ] First run on GitHub: check the `version` job output, the pre-release and its files, that the APK installs over the current app, and that a `docs:` push creates no release. If `main` blocks pushes from the workflow, the CHANGELOG step needs a bypass for the Actions bot
+

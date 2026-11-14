@@ -33,7 +33,8 @@ interface Platform {
     fun openDriver(path: String): SqlDriver
     fun createPlayer(): PlayerEngine
     val deviceModel: String get() = "Android"
-    val appVersion: String get() = "0.2.0"
+    /** The version the app was built as (1.3.0 or 1.3.0-beta.7); "dev" when a platform does not say. */
+    val appVersion: String get() = "dev"
 
     /** False when heavy background work should wait: app hidden and on battery, or on a metered network. */
     fun canRunBackground(): Boolean = true

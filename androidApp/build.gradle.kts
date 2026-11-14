@@ -18,8 +18,9 @@ android {
         applicationId = "io.max.paperplay.compose"
         minSdk = 26
         targetSdk = 37
-        versionCode = 3
-        versionName = "0.3.0"
+        // Set by the root build file: -PappVersion / -PappVersionCode in CI, version.properties and the commit count locally.
+        versionCode = rootProject.extra["appVersionCode"] as Int
+        versionName = rootProject.extra["appVersion"] as String
         ndk { abiFilters += "arm64-v8a" }
     }
     signingConfigs {

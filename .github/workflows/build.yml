@@ -1,23 +1,20 @@
 name: Build PaperPlay
 
-# Builds the Android debug and release APKs and the Windows and Linux desktop apps. The tests (a test in :core:jvmTest hangs on
-# the runner) and the job that publishes a GitHub Release are switched off: `if: false`, and `false &&` in front of the release condition.
+# Every push builds the Android debug and release APKs and the Windows and Linux apps. A push to beta also publishes a
+# numbered pre-release, a push to main publishes the stable release; the version and the change log come from the commit
+# subjects (scripts/release/release.py). The tests are switched off because a test in :core:jvmTest hangs on the runner.
 on:
   push:
     branches: [ main, beta ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
     inputs:
-      release:
-        description: 'Publish a GitHub Release with all builds'
-        type: boolean
-        default: false
-      tag:
-        description: 'Release tag (used when release is ticked), e.g. v1.0.1'
-        type: string
-        default: ''
+      bump:
+        description: 'Force the version bump instead of reading the commit subjects'
+        type: choice
+        options: [ auto, patch, minor, major ]
+        default: auto
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,8 +24,34 @@ permissions:
   contents: write
 
 jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      version: ${{ steps.plan.outputs.version }}
+      base: ${{ steps.plan.outputs.base }}
+      code: ${{ steps.plan.outputs.code }}
+      channel: ${{ steps.plan.outputs.channel }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the whole history and every tag
+
+      - name: Release script tests
+        run: python3 scripts/release/test_release.py
+
+      - name: Work out the version
+        id: plan
+        run: |
+          channel=beta
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then channel=stable; fi
+          python3 scripts/release/release.py plan --channel "$channel" --bump "${{ inputs.bump || 'auto' }}" --github-output
+
   android:
     name: Android (${{ matrix.type }} APK)
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -73,12 +96,12 @@ jobs:
           echo "signing.file=$RUNNER_TEMP/signing.properties" >> local.properties
 
       - name: Build Android ${{ matrix.type }} APK
-        run: ./gradlew :androidApp:${{ matrix.task }} --no-daemon
+        run: ./gradlew :androidApp:${{ matrix.task }} -PappVersion=${{ needs.version.outputs.version }} -PappVersionCode=${{ needs.version.outputs.code }} --no-daemon
 
       - name: Name the APK
         run: |
           mkdir -p dist
-          cp androidApp/build/outputs/apk/${{ matrix.type }}/*.apk dist/PaperPlay-Android-${{ matrix.type }}.apk
+          cp androidApp/build/outputs/apk/${{ matrix.type }}/*.apk dist/PaperPlay-${{ needs.version.outputs.version }}-android-${{ matrix.type }}.apk
 
       - uses: actions/upload-artifact@v4
         with:
@@ -88,6 +111,7 @@ jobs:
 
   desktop-windows:
     name: Desktop (Windows zip, MSI and setup exe)
+    needs: version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -136,15 +160,16 @@ jobs:
       - name: Build app image, MSI and setup exe
         shell: cmd
         # createDistributable makes the unpacked app folder the zip needs; the package tasks only make the installers.
-        run: gradlew.bat :desktopApp:createDistributable :desktopApp:packageDistributionForCurrentOS --no-daemon
+        run: gradlew.bat :desktopApp:createDistributable :desktopApp:packageDistributionForCurrentOS -PappVersion=${{ needs.version.outputs.version }} -PappVersionCode=${{ needs.version.outputs.code }} --no-daemon
 
       - name: Collect files
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -Path "desktopApp\build\compose\binaries\main\app\PaperPlay" -DestinationPath "dist\PaperPlay-Windows-x64.zip" -Force
-          Copy-Item (Get-ChildItem "desktopApp\build\compose\binaries\main\msi\*.msi" | Select-Object -First 1) "dist\PaperPlay-Windows-x64.msi"
-          Copy-Item (Get-ChildItem "desktopApp\build\compose\binaries\main\exe\*.exe" | Select-Object -First 1) "dist\PaperPlay-Windows-x64-setup.exe"
+          $v = "${{ needs.version.outputs.version }}"
+          Compress-Archive -Path "desktopApp\build\compose\binaries\main\app\PaperPlay" -DestinationPath "dist\PaperPlay-$v-windows-x64.zip" -Force
+          Copy-Item (Get-ChildItem "desktopApp\build\compose\binaries\main\msi\*.msi" | Select-Object -First 1) "dist\PaperPlay-$v-windows-x64.msi"
+          Copy-Item (Get-ChildItem "desktopApp\build\compose\binaries\main\exe\*.exe" | Select-Object -First 1) "dist\PaperPlay-$v-windows-x64-setup.exe"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -154,6 +179,7 @@ jobs:
 
   desktop-linux:
     name: Desktop (Linux archive)
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,12 +192,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build desktop distribution
-        run: ./gradlew :desktopApp:createDistributable --no-daemon
+        run: ./gradlew :desktopApp:createDistributable -PappVersion=${{ needs.version.outputs.version }} -PappVersionCode=${{ needs.version.outputs.code }} --no-daemon
 
       - name: Package Linux archive
         run: |
           mkdir -p dist
-          tar -czf dist/PaperPlay-Linux-x64.tar.gz -C desktopApp/build/compose/binaries/main/app .
+          tar -czf dist/PaperPlay-${{ needs.version.outputs.version }}-linux-x64.tar.gz -C desktopApp/build/compose/binaries/main/app .
 
       - uses: actions/upload-artifact@v4
         with:
@@ -180,27 +206,48 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Publish GitHub Release
-    needs: [ android, desktop-windows, desktop-linux ]
-    if: false && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release))
+    name: Publish release
+    needs: [ version, android, desktop-windows, desktop-linux ]
+    if: needs.version.outputs.release == 'true' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v4
         with:
           path: release-files
           merge-multiple: true
 
-      - name: Work out the tag
-        id: tag
+      - name: Release notes and checksums
         run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then t="${GITHUB_REF_NAME}"; else t="${{ inputs.tag }}"; fi
-          if [ -z "$t" ]; then t="build-$(date +%Y%m%d-%H%M)"; fi
-          echo "name=$t" >> "$GITHUB_OUTPUT"
+          rm -f release-files/*-android-debug.apk # the debug APK stays a workflow artifact
+          python3 scripts/release/release.py notes --channel "${{ needs.version.outputs.channel }}" --out notes.md
+          (cd release-files && sha256sum * > SHA256SUMS.txt)
 
       - name: Create the release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.name }}
-          name: PaperPlay ${{ steps.tag.outputs.name }}
-          generate_release_notes: true
+          tag_name: ${{ needs.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: PaperPlay ${{ needs.version.outputs.version }}
+          body_path: notes.md
+          prerelease: ${{ needs.version.outputs.channel == 'beta' }}
+          make_latest: ${{ needs.version.outputs.channel == 'stable' }}
           files: release-files/*
+
+      # A stable release also records itself in CHANGELOG.md and version.properties on main. A push made with the
+      # workflow's own token does not start another run, and the commit is a chore, which never releases.
+      - name: Update CHANGELOG.md and version.properties on main
+        if: needs.version.outputs.channel == 'stable'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+          python3 scripts/release/release.py changelog --version "${{ needs.version.outputs.base }}" --notes notes.md
+          printf 'version=%s\n' "${{ needs.version.outputs.base }}" > version.properties
+          git add CHANGELOG.md version.properties
+          git commit -m "chore(release): v${{ needs.version.outputs.base }}"
+          git push origin HEAD:main

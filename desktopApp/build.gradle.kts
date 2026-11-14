@@ -104,7 +104,7 @@ compose.desktop {
         mainClass = "io.max.paperplay.desktop.MainKt"
         // Without limits the JVM grows its heap to a quarter of the machine's RAM and keeps it. Serial GC needs no extra GC threads or
         // regions, and the free-ratio flags hand unused heap back to the OS.
-        jvmArgs += listOf("-Xms32m", "-Xmx448m", "-XX:+UseSerialGC", "-XX:MinHeapFreeRatio=10", "-XX:MaxHeapFreeRatio=30", "-Xss512k", "-XX:ReservedCodeCacheSize=64m", "-XX:MaxMetaspaceSize=160m", "-Xshare:auto")
+        jvmArgs += listOf("-Xms32m", "-Xmx448m", "-XX:+UseSerialGC", "-XX:MinHeapFreeRatio=10", "-XX:MaxHeapFreeRatio=30", "-Xss512k", "-XX:ReservedCodeCacheSize=64m", "-XX:MaxMetaspaceSize=160m", "-Xshare:auto", "-Dpaperplay.version=${rootProject.extra["appVersion"]}")
         buildTypes.release.proguard {
             isEnabled.set(true)
             obfuscate.set(false)
@@ -118,7 +118,8 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
             )
             packageName = "PaperPlay"
-            packageVersion = "1.2.0"
+            // The installers need plain MAJOR.MINOR.PATCH, so a beta number is dropped here and stays in the file name.
+            packageVersion = (rootProject.extra["appVersion"] as String).substringBefore("-")
             // The packaged runtime only holds the modules named here: JDBC (the library database), naming and TLS.
             modules("java.sql", "java.naming", "jdk.unsupported", "jdk.crypto.ec", "jdk.httpserver")
             windows {
