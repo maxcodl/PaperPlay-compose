@@ -43,6 +43,16 @@ Name: "{autodesktop}\PaperPlay"; Filename: "{app}\PaperPlay.exe"; Tasks: desktop
 Filename: "{app}\PaperPlay.exe"; Description: "Launch PaperPlay"; Flags: nowait postinstall skipifsilent
 
 [Code]
+{ An older release shipped a per-machine MSI in Program Files. It does not upgrade this per-user install, so tell the user to remove it. }
+function InitializeSetup(): Boolean;
+begin
+  Result := True;
+  if (not WizardSilent) and FileExists(ExpandConstant('{commonpf64}\PaperPlay\PaperPlay.exe')) then
+    MsgBox('An older PaperPlay is installed in ' + ExpandConstant('{commonpf64}\PaperPlay') + '.' + #13#10#13#10 +
+           'After this setup finishes, remove it from Settings > Apps so only one copy is left. Your library and login are kept.',
+           mbInformation, MB_OK);
+end;
+
 { After the app is removed, offer to erase the library, Telegram session and secrets in %APPDATA%\PaperPlay. Silent uninstalls keep them. }
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
