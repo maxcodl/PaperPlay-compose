@@ -25,7 +25,7 @@ kotlin {
 val packagingResources = layout.buildDirectory.dir("packagingResources")
 
 // libvlc (git-ignored; the full copy stays in src/jvmMain/resources/vlc) is staged here with only the audio plugins
-// the player needs, so the image carries about 25 MB of VLC instead of 40. TDLib comes from PAPERPLAY_TDLIB, else the Flutter tree.
+// the player needs, so the image carries about 25 MB of VLC instead of 40. TDLib comes from PAPERPLAY_TDLIB, else desktopApp/third_party/tdlib.
 // To keep another plugin, add it to vlcKeep. Format check after any change: one FLAC, one M4A/AAC, MP3, Opus, OGG, WAV, WMA, ALAC.
 val vlcKeep = mapOf(
     "access" to setOf("filesystem", "http", "tcp", "idummy", "imem", "access_concat"),
@@ -58,7 +58,7 @@ val stagePackagingResources = tasks.register<Copy>("stagePackagingResources") {
         eachFile { if (!file.isDirectory && !vlcWanted(relativePath.pathString.removePrefix("vlc/").removePrefix("vlc\\"))) exclude() }
         includeEmptyDirs = false
     }
-    val tdlib = file(System.getenv("PAPERPLAY_TDLIB") ?: "D:/Git forks/Teleplayer/windows/third_party/tdlib")
+    val tdlib = file(System.getenv("PAPERPLAY_TDLIB") ?: "third_party/tdlib")
     if (tdlib.exists()) from(tdlib) { into("native"); include("*.dll") }
 }
 // libvlc 3 rescans every plugin at start unless plugins/plugins.dat exists. vlc-cache-gen.exe (from a local VLC install)
