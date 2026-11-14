@@ -26,6 +26,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -93,7 +97,7 @@ fun <T> DropdownRow(
     title: String, selected: T, options: List<T>, label: (T) -> String, onSelect: (T) -> Unit,
     icon: ImageVector? = null, subtitle: String? = null, extra: @Composable () -> Unit = {},
 ) {
-    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var open by remember { mutableStateOf(false) }
     SettingsRow(title, icon = icon, subtitle = subtitle, onClick = { open = true }) {
         extra()
         Box {
